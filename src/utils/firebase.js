@@ -5,6 +5,8 @@ import {
   signInWithRedirect,
   getRedirectResult,
   GoogleAuthProvider,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged
 } from 'firebase/auth';
@@ -61,7 +63,19 @@ export function formatAuthError(err) {
     return `Tên miền "${currentHost}" chưa được thêm vào Authorized Domains trên Firebase Console. Vui lòng vào Firebase > Authentication > Settings > Authorized domains và thêm "${currentHost}".`;
   }
   if (code === 'auth/operation-not-allowed') {
-    return 'Chưa BẬT phương thức đăng nhập Google trên Firebase Console! Vui lòng vào Firebase > Authentication > Sign-in method và Bật (Enable) Google Provider.';
+    return 'Chưa BẬT phương thức đăng nhập này trên Firebase Console! Vui lòng vào Firebase > Authentication > Sign-in method và Bật (Enable) Google hoặc Email/Password.';
+  }
+  if (code === 'auth/user-not-found' || code === 'auth/invalid-credential' || code === 'auth/wrong-password') {
+    return 'Email hoặc mật khẩu không chính xác. Nếu chưa có tài khoản, vui lòng chọn "Đăng ký".';
+  }
+  if (code === 'auth/email-already-in-use') {
+    return 'Email này đã được đăng ký tài khoản. Vui lòng chuyển sang tab "Đăng nhập".';
+  }
+  if (code === 'auth/weak-password') {
+    return 'Mật khẩu quá ngắn, vui lòng đặt từ 6 ký tự trở lên.';
+  }
+  if (code === 'auth/invalid-email') {
+    return 'Địa chỉ Email không hợp lệ.';
   }
   if (code === 'auth/popup-closed-by-user') {
     return 'Bạn đã đóng cửa sổ đăng nhập Google trước khi hoàn tất.';
@@ -70,7 +84,7 @@ export function formatAuthError(err) {
     return 'Yêu cầu đăng nhập bị hủy do có cửa sổ khác mở cùng lúc.';
   }
   if (code === 'auth/network-request-failed') {
-    return 'Không thể kết nối tới Google. Vui lòng kiểm tra lại kết nối mạng Internet.';
+    return 'Không thể kết nối tới máy chủ. Vui lòng kiểm tra lại mạng Internet.';
   }
 
   return `Lỗi đăng nhập (${code}): ${message}`;
@@ -97,7 +111,6 @@ export async function loginWithGoogle() {
   } catch (err) {
     console.warn('Popup sign in error:', err);
 
-    // If popup was blocked on mobile browser, fallback to redirect
     if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
       try {
         await signInWithRedirect(auth, googleProvider);
@@ -107,6 +120,25 @@ export async function loginWithGoogle() {
       }
     }
 
+    return { success: false, error: formatAuthError(err) };
+  }
+}
+
+// Email & Password Auth (100% Guaranteed on iOS PWA Standalone)
+export async function loginWithEmail(email, password) {
+  try {
+    const result = await signInWithEmailAndPassword(auth, email.trim(), password);
+    return { success: true, user: result.user };
+  } catch (err) {
+    return { success: false, error: formatAuthError(err) };
+  }
+}
+
+export async function registerWithEmail(email, password) {
+  try {
+    const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
+    return { success: true, user: result.user };
+  } catch (err) {
     return { success: false, error: formatAuthError(err) };
   }
 }

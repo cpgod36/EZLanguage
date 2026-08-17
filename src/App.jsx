@@ -220,6 +220,16 @@ export default function App() {
       <LoginScreen
         onLoginWithGoogle={handleLogin}
         onContinueAsGuest={handleContinueAsGuest}
+        onAuthSuccess={(user) => {
+          setCurrentUser(user);
+          setIsGuestMode(false);
+          localStorage.removeItem('ez_guest_mode');
+          syncLocalNotesToCloud(user.uid, notes);
+          setToastMessage({
+            text: `Chào mừng ${user.displayName || user.email}! Đã bật đồng bộ Đám mây.`
+          });
+          setTimeout(() => setToastMessage(null), 4000);
+        }}
       />
     );
   }
