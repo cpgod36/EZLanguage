@@ -1,15 +1,11 @@
 import React, { useState } from 'react';
-import { Download, Upload, Volume2, Smartphone, ShieldCheck, RefreshCw, CheckCircle2, AlertCircle, Cloud, LogIn, LogOut, User } from 'lucide-react';
+import { Download, Upload, Volume2, ShieldCheck, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import { exportNotesToJSON, importNotesFromJSON, INITIAL_SAMPLE_NOTES, saveNotes } from '../utils/storage';
 import { playPronunciation } from '../utils/speech';
 
 export default function BackupSettings({
   notes,
-  onNotesChange,
-  currentUser,
-  onLogin,
-  onLogout,
-  onForceSyncToCloud
+  onNotesChange
 }) {
   const [voiceLang, setVoiceLang] = useState(localStorage.getItem('ez_voice_lang') || 'en-US');
   const [voiceRate, setVoiceRate] = useState(localStorage.getItem('ez_voice_rate') || '0.9');
@@ -74,96 +70,7 @@ export default function BackupSettings({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* Cloud Sync & Google Account Status */}
-      <div
-        style={{
-          background: currentUser ? 'linear-gradient(135deg, #ECFDF5, #D1FAE5)' : 'linear-gradient(135deg, #EFF6FF, #DBEAFE)',
-          borderRadius: 16,
-          padding: '18px',
-          border: currentUser ? '1px solid #A7F3D0' : '1px solid #BFDBFE',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 12
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 800, color: currentUser ? '#065F46' : '#1E40AF' }}>
-            <Cloud size={20} />
-            <span>Đồng bộ Đám mây (Cloud Sync)</span>
-          </div>
-          {currentUser && (
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#047857', background: '#A7F3D0', padding: '2px 8px', borderRadius: 999 }}>
-              ● Đang kết nối
-            </span>
-          )}
-        </div>
-
-        {currentUser ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: '0.88rem', color: '#065F46' }}>
-              Tài khoản: <strong>{currentUser.displayName || currentUser.email}</strong>
-            </div>
-            <div style={{ fontSize: '0.82rem', color: '#047857' }}>
-              Tất cả từ vựng bạn thêm/xóa/sửa sẽ <strong>tự động đồng bộ ngay lập tức</strong> giữa iPhone và Máy tính qua Firebase!
-            </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-              <button
-                className="btn btn-secondary"
-                style={{ fontSize: '0.82rem', padding: '8px 12px', background: 'white' }}
-                onClick={onForceSyncToCloud}
-              >
-                <Cloud size={14} /> Đẩy toàn bộ dữ liệu lên Cloud
-              </button>
-              <button
-                className="btn"
-                style={{ fontSize: '0.82rem', padding: '8px 12px', background: '#FEE2E2', color: '#B91C1C' }}
-                onClick={onLogout}
-              >
-                <LogOut size={14} /> Đăng xuất
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: '0.85rem', color: '#1E40AF' }}>
-              Đăng nhập bằng Gmail để dữ liệu trên <strong>Điện thoại iPhone</strong> và <strong>Máy tính</strong> tự động đồng bộ realtime với nhau.
-            </div>
-            <button
-              className="btn btn-primary"
-              style={{ background: '#2563EB', padding: '10px 16px', fontSize: '0.9rem', width: 'fit-content' }}
-              onClick={onLogin}
-            >
-              <LogIn size={16} /> Đăng nhập bằng Google (Gmail)
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* iOS Installation Guide */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #EEF2FF, #E0E7FF)',
-          borderRadius: 16,
-          padding: '18px',
-          border: '1px solid #C7D2FE',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#3730A3', fontWeight: 800 }}>
-          <Smartphone size={20} />
-          <span>Cách cài đặt lên Màn hình chính iPhone</span>
-        </div>
-        <div style={{ fontSize: '0.85rem', color: '#4338CA', lineHeight: 1.5 }}>
-          1. Mở trang web này bằng trình duyệt <strong>Safari trên iPhone</strong>.<br />
-          2. Nhấn vào biểu tượng <strong>Chia sẻ (Share icon 📤)</strong> ở thanh dưới của Safari.<br />
-          3. Cuộn xuống và chọn <strong>"Thêm vào Màn hình chính" (Add to Home Screen)</strong>.<br />
-          👉 App sẽ xuất hiện như ứng dụng iPhone bình thường, dùng mượt và có thể học offline!
-        </div>
-      </div>
-
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 24 }}>
       {/* Voice Settings */}
       <div
         style={{

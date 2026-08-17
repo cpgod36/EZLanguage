@@ -8,6 +8,8 @@ import StatsView from './components/StatsView';
 import BackupSettings from './components/BackupSettings';
 import LoginScreen from './components/LoginScreen';
 import SplashScreen from './components/SplashScreen';
+import EmailVerificationScreen from './components/EmailVerificationScreen';
+import confetti from 'canvas-confetti';
 import { Plus, Trash2, RotateCcw } from 'lucide-react';
 import {
   getStoredNotes,
@@ -35,7 +37,6 @@ export default function App() {
   const [streakInfo, setStreakInfo] = useState(() => getStreakInfo());
   const [activeTab, setActiveTab] = useState('notes');
   const [currentUser, setCurrentUser] = useState(null);
-  const [isGuestMode, setIsGuestMode] = useState(() => localStorage.getItem('ez_guest_mode') === 'true');
   const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   // Filters and Sorting
@@ -56,17 +57,12 @@ export default function App() {
     checkRedirectAuth().then((res) => {
       if (res && res.user) {
         setCurrentUser(res.user);
-        setIsGuestMode(false);
       }
     });
 
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setIsAuthChecking(false);
-      if (user) {
-        setIsGuestMode(false);
-        localStorage.removeItem('ez_guest_mode');
-      }
     });
 
     return () => unsubscribeAuth();
@@ -96,8 +92,6 @@ export default function App() {
     const res = await loginWithGoogle();
     if (res.success && res.user) {
       setCurrentUser(res.user);
-      setIsGuestMode(false);
-      localStorage.removeItem('ez_guest_mode');
       syncLocalNotesToCloud(res.user.uid, notes);
       setToastMessage({
         text: `Chào mừng ${res.user.displayName || res.user.email}! Đã bật đồng bộ Đám mây.`
@@ -114,15 +108,8 @@ export default function App() {
   const handleLogout = async () => {
     await logoutUser();
     setCurrentUser(null);
-    setIsGuestMode(false);
-    localStorage.removeItem('ez_guest_mode');
     setToastMessage({ text: 'Đã đăng xuất tài khoản.' });
     setTimeout(() => setToastMessage(null), 3000);
-  };
-
-  const handleContinueAsGuest = () => {
-    setIsGuestMode(true);
-    localStorage.setItem('ez_guest_mode', 'true');
   };
 
   const handleForceSync = async () => {
@@ -132,15 +119,59 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // CRUD Operations
+  // CRUD Operations with Celebration Effects
   const handleSaveNote = (noteData) => {
-    const updated = addOrUpdateNote(noteData, notes);
-    setNotes(updated);
+    const isEditing = Boolean(noteData.id);
+    const { updatedList, savedNote } = addOrUpdateNote(noteData, notes);
+    setNotes(updatedList);
     setStreakInfo(getStreakInfo());
 
     if (currentUser) {
-      saveNoteToCloud(currentUser.uid, noteData);
+      saveNoteToCloud(currentUser.uid, savedNote);
     }
+
+    // Celebration Confetti / Firework Effect
+    try {
+      if (isEditing) {
+        // Sparkling burst for edit
+        confetti({
+          particleCount: 35,
+          spread: 60,
+          origin: { y: 0.65 },
+          colors: ['#6366F1', '#8B5CF6', '#10B981', '#F59E0B'],
+          ticks: 180,
+          gravity: 1.1,
+          scalar: 0.9
+        });
+      } else {
+        // Dual firework blast for new note creation
+        confetti({
+          particleCount: 45,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0.25, y: 0.7 },
+          colors: ['#10B981', '#3B82F6', '#F59E0B', '#6366F1', '#EC4899']
+        });
+        confetti({
+          particleCount: 45,
+          angle: 120,
+          spread: 55,
+          origin: { x: 0.75, y: 0.7 },
+          colors: ['#10B981', '#3B82F6', '#F59E0B', '#6366F1', '#EC4899']
+        });
+      }
+    } catch (e) {
+      console.log('Confetti error', e);
+    }
+
+    // Toast feedback
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setToastMessage({
+      text: isEditing ? `Đã cập nhật ghi chú "${savedNote.term}"` : `Đã thêm từ mới "${savedNote.term}" vào sổ tay!`
+    });
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
   };
 
   const handleTriggerDelete = (note) => {
@@ -215,32 +246,49 @@ export default function App() {
     setEditNote(targetNote);
   };
 
-  // 1. While checking auth on startup, show clean splash screen to eliminate flash
+  // 1. While checking initial auth state on startup, show clean splash screen to eliminate flash
   if (isAuthChecking) {
     return <SplashScreen />;
   }
 
-  // 2. If not logged in and not in guest mode, show beautiful LoginScreen
-  if (!currentUser && !isGuestMode) {
+  // 2. If not logged in, show LoginScreen
+  if (!currentUser) {
     return (
       <LoginScreen
         onLoginWithGoogle={handleLogin}
-        onContinueAsGuest={handleContinueAsGuest}
         onAuthSuccess={(user) => {
           setCurrentUser(user);
-          setIsGuestMode(false);
-          localStorage.removeItem('ez_guest_mode');
-          syncLocalNotesToCloud(user.uid, notes);
-          setToastMessage({
-            text: `Chào mừng ${user.displayName || user.email}! Đã bật đồng bộ Đám mây.`
-          });
-          setTimeout(() => setToastMessage(null), 4000);
+          if (user.emailVerified) {
+            syncLocalNotesToCloud(user.uid, notes);
+            setToastMessage({
+              text: `Chào mừng ${user.displayName || user.email}! Đã bật đồng bộ Đám mây.`
+            });
+            setTimeout(() => setToastMessage(null), 4000);
+          }
         }}
       />
     );
   }
 
-  // 3. Main App View
+  // 3. If registered/logged in with Email/Password but email is NOT verified yet, show EmailVerificationScreen
+  if (!currentUser.emailVerified && currentUser.providerData?.[0]?.providerId === 'password') {
+    return (
+      <EmailVerificationScreen
+        user={currentUser}
+        onVerified={(verifiedUser) => {
+          setCurrentUser(verifiedUser);
+          syncLocalNotesToCloud(verifiedUser.uid, notes);
+          setToastMessage({
+            text: `Chào mừng ${verifiedUser.displayName || verifiedUser.email}! Đã bật đồng bộ Đám mây.`
+          });
+          setTimeout(() => setToastMessage(null), 4000);
+        }}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  // 4. Main Authenticated App View
   return (
     <div className="app-container">
       {/* Dynamic Header */}
@@ -248,12 +296,6 @@ export default function App() {
         streakInfo={streakInfo}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        selectedCategory={selectedCategory}
-        setSelectedCategory={setSelectedCategory}
-        sortBy={sortBy}
-        setSortBy={setSortBy}
-        showStarredOnly={showStarredOnly}
-        setShowStarredOnly={setShowStarredOnly}
         activeTab={activeTab}
         currentUser={currentUser}
         onLogin={handleLogin}
@@ -295,10 +337,6 @@ export default function App() {
           <BackupSettings
             notes={notes}
             onNotesChange={(newNotes) => setNotes(newNotes)}
-            currentUser={currentUser}
-            onLogin={handleLogin}
-            onLogout={handleLogout}
-            onForceSyncToCloud={handleForceSync}
           />
         )}
       </main>

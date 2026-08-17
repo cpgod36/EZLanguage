@@ -1,80 +1,142 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import confetti from 'canvas-confetti';
-import { Volume2, RotateCw, CheckCircle2, XCircle, Trophy, Star, Layers, Calendar, Filter } from 'lucide-react';
-import { NOTE_TYPES } from '../utils/storage';
+import {
+  Volume2, RotateCw, CheckCircle2, XCircle, Trophy, Star,
+  Layers, Calendar, Flame, Sparkles, ArrowLeft, ArrowRight,
+  BookOpen, MessageSquareText, AlertCircle, Play, ChevronRight, BarChart2
+} from 'lucide-react';
+import { NOTE_TYPES, isToday } from '../utils/storage';
 import { playPronunciation } from '../utils/speech';
 
 export default function FlashcardReview({
   notes,
   onUpdateMastery
 }) {
-  const [scopeFilter, setScopeFilter] = useState('all'); // 'all' | 'today' | 'unmastered' | 'starred'
-  const [categoryFilter, setCategoryFilter] = useState('all'); // 'all' | 'word' | 'phrasal_verb' | 'collocation_idiom' | 'sentence_pattern' | 'mistake_tip'
-  
+  // selectedDeck: null => Deck Selection Hub; { id, title, filterFn, badgeClass, icon, color } => Active Flashcard Session
+  const [selectedDeck, setSelectedDeck] = useState(null);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [sessionResults, setSessionResults] = useState({ remembered: 0, forgotten: 0 });
   const [isFinished, setIsFinished] = useState(false);
 
-  // Today Date String (Local time YYYY-MM-DD)
-  const todayStr = useMemo(() => {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }, []);
-
-  // Filter cards for the review session
-  const reviewDeck = useMemo(() => {
-    let list = [...notes];
-
-    // Filter by Scope (Today, Starred, Unmastered)
-    if (scopeFilter === 'today') {
-      list = list.filter(n => n.createdAt && n.createdAt.startsWith(todayStr));
-    } else if (scopeFilter === 'unmastered') {
-      list = list.filter(n => n.masteryLevel !== 'mastered');
-    } else if (scopeFilter === 'starred') {
-      list = list.filter(n => n.isStarred);
-    }
-
-    // Filter by Category
-    if (categoryFilter !== 'all') {
-      list = list.filter(n => n.type === categoryFilter);
-    }
-
-    // Shuffle cards for dynamic review
-    return list.sort(() => Math.random() - 0.5);
-  }, [notes, scopeFilter, categoryFilter, todayStr]);
-
-  // Counts for Badges
-  const counts = useMemo(() => {
-    const todayNotes = notes.filter(n => n.createdAt && n.createdAt.startsWith(todayStr));
+  // Define Available Decks
+  const decks = useMemo(() => {
+    const todayNotes = notes.filter(n => isToday(n.createdAt));
     const unmasteredNotes = notes.filter(n => n.masteryLevel !== 'mastered');
     const starredNotes = notes.filter(n => n.isStarred);
 
-    return {
-      all: notes.length,
-      today: todayNotes.length,
-      unmastered: unmasteredNotes.length,
-      starred: starredNotes.length,
-      word: notes.filter(n => n.type === 'word').length,
-      phrasal_verb: notes.filter(n => n.type === 'phrasal_verb').length,
-      collocation_idiom: notes.filter(n => n.type === 'collocation_idiom').length,
-      sentence_pattern: notes.filter(n => n.type === 'sentence_pattern').length,
-      mistake_tip: notes.filter(n => n.type === 'mistake_tip').length
-    };
-  }, [notes, todayStr]);
+    // Goal & Scope Decks
+    const featuredDecks = [
+      {
+        id: 'today',
+        title: 'Mới thêm Hôm nay',
+        description: 'Ôn tập ngay các từ và cụm từ bạn vừa lưu trong ngày',
+        icon: Flame,
+        iconColor: '#EA580C',
+        iconBg: '#FFF7ED',
+        badgeClass: 'badge-coral',
+        tagText: 'Hôm nay',
+        filterFn: (n) => isToday(n.createdAt),
+        count: todayNotes.length,
+        masteredCount: todayNotes.filter(n => n.masteryLevel === 'mastered').length
+      },
+      {
+        id: 'unmastered',
+        title: 'Cần ôn tập gấp',
+        description: 'Những từ bạn đang học hoặc chưa ghi nhớ vững',
+        icon: RotateCw,
+        iconColor: '#D97706',
+        iconBg: '#FEF3C7',
+        badgeClass: 'badge-honey',
+        tagText: 'Chưa thuộc',
+        filterFn: (n) => n.masteryLevel !== 'mastered',
+        count: unmasteredNotes.length,
+        masteredCount: 0
+      },
+      {
+        id: 'starred',
+        title: 'Mục Yêu thích',
+        description: 'Các từ vựng và câu tâm đắc bạn đã đánh dấu sao',
+        icon: Star,
+        iconColor: '#F59E0B',
+        iconBg: '#FEF9C3',
+        badgeClass: 'badge-honey',
+        tagText: 'Đã gắn sao',
+        filterFn: (n) => n.isStarred,
+        count: starredNotes.length,
+        masteredCount: starredNotes.filter(n => n.masteryLevel === 'mastered').length
+      },
+      {
+        id: 'all',
+        title: 'Tất cả Kho kiến thức',
+        description: 'Ôn tập toàn bộ từ vựng, cụm từ và ngữ pháp đã lưu',
+        icon: Layers,
+        iconColor: '#4F46E5',
+        iconBg: '#EEF2FF',
+        badgeClass: 'badge-sky',
+        tagText: 'Tất cả',
+        filterFn: () => true,
+        count: notes.length,
+        masteredCount: notes.filter(n => n.masteryLevel === 'mastered').length
+      }
+    ];
 
-  // Reset state when deck changes
-  useEffect(() => {
+    // Category Decks
+    const categoryDecks = Object.values(NOTE_TYPES).map(type => {
+      const categoryNotes = notes.filter(n => n.type === type.id);
+      const iconMap = {
+        word: BookOpen,
+        phrasal_verb: Layers,
+        collocation_idiom: Sparkles,
+        sentence_pattern: MessageSquareText,
+        mistake_tip: AlertCircle
+      };
+      const IconComponent = iconMap[type.id] || BookOpen;
+
+      return {
+        id: `cat_${type.id}`,
+        title: type.label,
+        shortTitle: type.shortTitle || type.englishLabel,
+        englishLabel: type.englishLabel,
+        description: type.description || `Ôn tập riêng các mục ${type.label.toLowerCase()}`,
+        icon: IconComponent,
+        badgeClass: type.badgeClass,
+        colorKey: type.colorKey,
+        filterFn: (n) => n.type === type.id,
+        count: categoryNotes.length,
+        masteredCount: categoryNotes.filter(n => n.masteryLevel === 'mastered').length
+      };
+    });
+
+    return { featuredDecks, categoryDecks };
+  }, [notes]);
+
+  // Cards for Currently Selected Deck
+  const activeDeckCards = useMemo(() => {
+    if (!selectedDeck) return [];
+    const list = notes.filter(selectedDeck.filterFn);
+    // Shuffle for dynamic active recall
+    return list.sort(() => Math.random() - 0.5);
+  }, [notes, selectedDeck]);
+
+  // Reset Session when entering a deck
+  const handleStartDeck = (deck) => {
+    if (deck.count === 0) return;
+    setSelectedDeck(deck);
     setCurrentIndex(0);
     setIsFlipped(false);
     setIsFinished(false);
     setSessionResults({ remembered: 0, forgotten: 0 });
-  }, [scopeFilter, categoryFilter, reviewDeck.length]);
+  };
 
-  const currentCard = reviewDeck[currentIndex];
+  const handleBackToDecks = () => {
+    setSelectedDeck(null);
+    setIsFlipped(false);
+    setIsFinished(false);
+  };
+
+  const currentCard = activeDeckCards[currentIndex];
   const typeConfig = currentCard ? (NOTE_TYPES[currentCard.type] || NOTE_TYPES.word) : null;
 
   const handleCardClick = () => {
@@ -99,7 +161,7 @@ export default function FlashcardReview({
     }));
 
     // Move to next card
-    if (currentIndex + 1 < reviewDeck.length) {
+    if (currentIndex + 1 < activeDeckCards.length) {
       setIsFlipped(false);
       setTimeout(() => {
         setCurrentIndex(prev => prev + 1);
@@ -126,184 +188,219 @@ export default function FlashcardReview({
     setSessionResults({ remembered: 0, forgotten: 0 });
   };
 
+  // =========================================================================
+  // VIEW 1: DECK SELECTION HUB (Danh sách các Bộ Thẻ)
+  // =========================================================================
+  if (!selectedDeck) {
+    return (
+      <div className="decks-hub-container">
+        {/* Hub Header */}
+        <div className="decks-hub-header">
+          <h2 className="decks-hub-title">Bộ Thẻ Ôn Tập</h2>
+          <p className="decks-hub-desc">
+            Chọn một chủ đề hoặc mục tiêu bên dưới để bắt đầu lật thẻ ghi nhớ
+          </p>
+        </div>
+
+        {/* Section 1: Featured Target Decks */}
+        <div className="decks-section">
+          <div className="decks-section-title">
+            <Calendar size={16} color="#4F46E5" />
+            <span>Mục tiêu ôn tập</span>
+          </div>
+
+          <div className="decks-grid">
+            {decks.featuredDecks.map(deck => {
+              const Icon = deck.icon;
+              const hasCards = deck.count > 0;
+              const percent = deck.count > 0 ? Math.round((deck.masteredCount / deck.count) * 100) : 0;
+
+              return (
+                <div
+                  key={deck.id}
+                  className={`deck-card ${!hasCards ? 'disabled' : ''}`}
+                  onClick={() => hasCards && handleStartDeck(deck)}
+                >
+                  <div className="deck-card-top">
+                    <div className="deck-icon-badge" style={{ background: deck.iconBg, color: deck.iconColor }}>
+                      <Icon size={20} />
+                    </div>
+                    <span className="deck-count-pill">
+                      {deck.count} thẻ
+                    </span>
+                  </div>
+
+                  <div className="deck-card-info">
+                    <h3 className="deck-title">{deck.title}</h3>
+                    <p className="deck-desc">{deck.description}</p>
+                  </div>
+
+                  <div className="deck-card-footer">
+                    {hasCards ? (
+                      <>
+                        <div className="deck-progress-bar">
+                          <div className="deck-progress-fill" style={{ width: `${percent}%` }} />
+                        </div>
+                        <div className="deck-action-row">
+                          <span className="deck-progress-text">{percent}% đã thuộc</span>
+                          <span className="deck-start-btn">
+                            Bắt đầu <ChevronRight size={14} />
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <span className="deck-empty-text">Chưa có thẻ nào</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Section 2: Category Decks */}
+        <div className="decks-section" style={{ marginTop: 22 }}>
+          <div className="decks-section-title">
+            <Layers size={16} color="#4F46E5" />
+            <span>Ôn theo thể loại</span>
+          </div>
+
+          <div className="decks-grid">
+            {decks.categoryDecks.map(deck => {
+              const Icon = deck.icon;
+              const hasCards = deck.count > 0;
+              const percent = deck.count > 0 ? Math.round((deck.masteredCount / deck.count) * 100) : 0;
+
+              return (
+                <div
+                  key={deck.id}
+                  className={`deck-card ${!hasCards ? 'disabled' : ''}`}
+                  onClick={() => hasCards && handleStartDeck(deck)}
+                >
+                  <div className="deck-card-top">
+                    <span className={`badge ${deck.badgeClass}`}>
+                      {deck.title}
+                    </span>
+                    <span className="deck-count-pill">
+                      {deck.count} thẻ
+                    </span>
+                  </div>
+
+                  <div className="deck-card-info">
+                    <h3 className="deck-title">{deck.shortTitle}</h3>
+                    <p className="deck-desc">{deck.description}</p>
+                  </div>
+
+                  <div className="deck-card-footer">
+                    {hasCards ? (
+                      <>
+                        <div className="deck-progress-bar">
+                          <div
+                            className="deck-progress-fill"
+                            style={{
+                              width: `${percent}%`,
+                              background: deck.colorKey === 'mint' ? '#10B981' : deck.colorKey === 'sky' ? '#3B82F6' : deck.colorKey === 'honey' ? '#F59E0B' : deck.colorKey === 'lavender' ? '#8B5CF6' : '#EF4444'
+                            }}
+                          />
+                        </div>
+                        <div className="deck-action-row">
+                          <span className="deck-progress-text">{percent}% đã thuộc</span>
+                          <span className="deck-start-btn">
+                            Bắt đầu <ChevronRight size={14} />
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <span className="deck-empty-text">Chưa có mục nào</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // VIEW 2: ACTIVE FLASHCARD SESSION
+  // =========================================================================
   return (
-    <div>
-      {/* Scope Filter Bar (Hôm nay, Chưa thuộc, Gắn sao, Tất cả) */}
-      <div style={{ marginBottom: 8 }}>
-        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Calendar size={13} color="#4F46E5" /> Mục tiêu ôn tập
-        </div>
-        <div className="filter-scroll-container">
-          <button
-            className={`filter-chip ${scopeFilter === 'today' ? 'active' : ''}`}
-            onClick={() => setScopeFilter('today')}
-            style={scopeFilter === 'today' ? { background: '#EA580C', borderColor: '#EA580C' } : {}}
-          >
-            🔥 Hôm nay ({counts.today})
-          </button>
+    <div className="flashcard-session-view">
+      {/* Session Top Navigation */}
+      <div className="session-top-nav">
+        <button className="btn-back-decks" onClick={handleBackToDecks}>
+          <ArrowLeft size={16} />
+          <span>Danh sách bộ thẻ</span>
+        </button>
 
-          <button
-            className={`filter-chip ${scopeFilter === 'all' ? 'active' : ''}`}
-            onClick={() => setScopeFilter('all')}
-          >
-            Tất cả ({counts.all})
-          </button>
-
-          <button
-            className={`filter-chip ${scopeFilter === 'unmastered' ? 'active' : ''}`}
-            onClick={() => setScopeFilter('unmastered')}
-          >
-            🔄 Chưa thuộc ({counts.unmastered})
-          </button>
-
-          <button
-            className={`filter-chip ${scopeFilter === 'starred' ? 'active' : ''}`}
-            onClick={() => setScopeFilter('starred')}
-          >
-            ⭐ Gắn sao ({counts.starred})
-          </button>
+        <div className="session-deck-badge">
+          <span className="session-deck-name">{selectedDeck.shortTitle || selectedDeck.title}</span>
         </div>
       </div>
 
-      {/* Category Filter Bar (Từ vựng, Phrasal verbs, Idioms,...) */}
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Filter size={13} color="#4F46E5" /> Theo thể loại
-        </div>
-        <div className="filter-scroll-container">
-          <button
-            className={`filter-chip ${categoryFilter === 'all' ? 'active' : ''}`}
-            onClick={() => setCategoryFilter('all')}
-          >
-            Tất cả loại
-          </button>
-
-          {Object.values(NOTE_TYPES).map(type => (
-            <button
-              key={type.id}
-              className={`filter-chip ${categoryFilter === type.id ? 'active' : ''}`}
-              onClick={() => setCategoryFilter(type.id)}
-            >
-              <span className={`badge ${type.badgeClass}`} style={{ padding: '1px 6px', fontSize: '0.7rem' }}>
-                {type.label}
-              </span>
-              <span style={{ fontSize: '0.72rem', opacity: 0.8 }}>({counts[type.id] || 0})</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Empty State if no cards match */}
-      {reviewDeck.length === 0 ? (
-        <div className="empty-state" style={{ padding: '36px 16px' }}>
-          <div className="empty-icon">
-            <Layers size={32} />
-          </div>
-          <h3 className="empty-title">
-            {scopeFilter === 'today'
-              ? 'Hôm nay bạn chưa thêm mục nào'
-              : 'Không có thẻ nào phù hợp với bộ lọc này'}
-          </h3>
-          <p className="empty-desc">
-            {scopeFilter === 'today'
-              ? 'Hãy qua tab "Sổ tay" bấm dấu (+) để thêm từ mới học hôm nay nhé!'
-              : 'Hãy chọn chế độ "Tất cả" hoặc chuyển thể loại khác để tiếp tục ôn tập.'}
-          </p>
-          {scopeFilter !== 'all' && (
-            <button
-              className="btn btn-secondary"
-              onClick={() => {
-                setScopeFilter('all');
-                setCategoryFilter('all');
-              }}
-              style={{ marginTop: 8 }}
-            >
-              Xem tất cả ({counts.all} thẻ)
-            </button>
-          )}
-        </div>
-      ) : isFinished ? (
-        /* Finished Screen */
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '24px 16px', gap: 16 }}>
-          <div
-            style={{
-              width: 76,
-              height: 76,
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #FEF08A, #F59E0B)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 8px 24px rgba(245, 158, 11, 0.3)'
-            }}
-          >
-            <Trophy size={38} color="white" />
+      {/* Finished Summary Screen */}
+      {isFinished ? (
+        <div className="session-finished-card">
+          <div className="finished-trophy">
+            <Trophy size={40} color="white" />
           </div>
 
-          <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-            Hoàn thành buổi ôn tập!
-          </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Bạn đã ôn tập xong <strong>{reviewDeck.length}</strong> thẻ kiến thức.
+          <h2 className="finished-title">Hoàn thành bài ôn tập!</h2>
+          <p className="finished-subtitle">
+            Bạn đã ôn tập xong bộ <strong>{selectedDeck.title}</strong> ({activeDeckCards.length} thẻ).
           </p>
 
-          {/* Score Card */}
-          <div
-            style={{
-              background: 'white',
-              borderRadius: 16,
-              padding: '16px 24px',
-              border: '1px solid var(--border-light)',
-              boxShadow: 'var(--shadow-card)',
-              display: 'flex',
-              justifyContent: 'space-around',
-              width: '100%',
-              maxWidth: 340,
-              margin: '8px 0'
-            }}
-          >
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#16A34A' }}>
-                {sessionResults.remembered}
+          <div className="finished-stats-box">
+            <div className="stat-item success">
+              <div className="stat-num">{sessionResults.remembered}</div>
+              <div className="stat-label">
+                <CheckCircle2 size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 2 }} /> Đã nhớ
               </div>
-              <div style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>Đã nhớ ✅</div>
             </div>
-            <div style={{ width: 1, background: '#E2E8F0' }} />
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#DC2626' }}>
-                {sessionResults.forgotten}
+            <div className="stat-divider" />
+            <div className="stat-item danger">
+              <div className="stat-num">{sessionResults.forgotten}</div>
+              <div className="stat-label">
+                <XCircle size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 2 }} /> Cần ôn lại
               </div>
-              <div style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>Cần ôn lại ❌</div>
             </div>
-            <div style={{ width: 1, background: '#E2E8F0' }} />
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#4F46E5' }}>
-                {Math.round((sessionResults.remembered / reviewDeck.length) * 100) || 0}%
+            <div className="stat-divider" />
+            <div className="stat-item primary">
+              <div className="stat-num">
+                {Math.round((sessionResults.remembered / activeDeckCards.length) * 100) || 0}%
               </div>
-              <div style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>Chính xác</div>
+              <div className="stat-label">Chính xác</div>
             </div>
           </div>
 
-          <button className="btn btn-primary" onClick={restartSession} style={{ width: '100%', maxWidth: 280, marginTop: 4 }}>
-            <RotateCw size={18} /> Ôn tập lại bộ này
-          </button>
+          <div className="finished-actions">
+            <button className="btn btn-primary" onClick={restartSession}>
+              <RotateCw size={16} /> Ôn lại bộ này
+            </button>
+            <button className="btn btn-secondary" onClick={handleBackToDecks}>
+              Chọn bộ thẻ khác
+            </button>
+          </div>
         </div>
       ) : (
-        /* Active Flashcard Review */
-        <div>
-          {/* Progress Bar */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-            <span>Thẻ <strong>{currentIndex + 1}</strong> / {reviewDeck.length}</span>
-            <span>{Math.round(((currentIndex + 1) / reviewDeck.length) * 100)}%</span>
+        /* Active Flashcard Player */
+        <div className="flashcard-player-area">
+          {/* Progress Indicator */}
+          <div className="session-progress-header">
+            <span className="progress-count">
+              Thẻ <strong>{currentIndex + 1}</strong> / {activeDeckCards.length}
+            </span>
+            <span className="progress-percent">
+              {Math.round(((currentIndex + 1) / activeDeckCards.length) * 100)}%
+            </span>
           </div>
-          <div style={{ width: '100%', height: 6, background: '#E2E8F0', borderRadius: 999, overflow: 'hidden', marginBottom: 14 }}>
+
+          <div className="session-progress-track">
             <div
-              style={{
-                width: `${((currentIndex + 1) / reviewDeck.length) * 100}%`,
-                height: '100%',
-                background: 'linear-gradient(90deg, #6366F1, #4F46E5)',
-                transition: 'width 0.3s ease'
-              }}
+              className="session-progress-fill"
+              style={{ width: `${((currentIndex + 1) / activeDeckCards.length) * 100}%` }}
             />
           </div>
 
@@ -312,7 +409,7 @@ export default function FlashcardReview({
             <div className={`flashcard-inner ${isFlipped ? 'flipped' : ''}`}>
               {/* FRONT SIDE */}
               <div className="flashcard-front">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <div className="card-top-row">
                   <span className={`badge ${typeConfig?.badgeClass || 'badge-mint'}`}>
                     {typeConfig?.label || 'Từ vựng'}
                   </span>
@@ -321,15 +418,11 @@ export default function FlashcardReview({
                   )}
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, margin: 'auto 0' }}>
-                  <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.25 }}>
-                    {currentCard?.term}
-                  </h2>
+                <div className="card-center-content">
+                  <h2 className="card-term">{currentCard?.term}</h2>
                   {currentCard?.ipa && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span className="note-ipa font-mono" style={{ fontSize: '0.92rem' }}>
-                        {currentCard.ipa}
-                      </span>
+                    <div className="card-ipa-group">
+                      <span className="note-ipa font-mono">{currentCard.ipa}</span>
                       <button className="audio-btn" onClick={handleAudio} title="Phát âm">
                         <Volume2 size={16} />
                       </button>
@@ -344,36 +437,25 @@ export default function FlashcardReview({
 
               {/* BACK SIDE */}
               <div className="flashcard-back">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: 10 }}>
-                  <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#6366F1' }}>
-                    {currentCard?.term}
-                  </span>
-                  <button
-                    className="audio-btn"
-                    style={{ width: 28, height: 28 }}
-                    onClick={handleAudio}
-                    title="Phát âm"
-                  >
+                <div className="card-top-row">
+                  <span className="back-term-title">{currentCard?.term}</span>
+                  <button className="audio-btn" style={{ width: 28, height: 28 }} onClick={handleAudio} title="Phát âm">
                     <Volume2 size={14} />
                   </button>
                 </div>
 
                 {/* Meanings */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', flex: 1, maxHeight: 220, paddingRight: 4 }}>
+                <div className="back-meanings-list">
                   {(currentCard?.meanings || []).map((m, idx) => (
-                    <div key={idx} style={{ background: 'white', padding: '8px 10px', borderRadius: 8, borderLeft: '3px solid #7C3AED' }}>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                    <div key={idx} className="back-meaning-box">
+                      <div className="back-meaning-title-row">
                         {m.partOfSpeech && (
-                          <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: '#6B21A8', background: '#F3E8FD', padding: '1px 4px', borderRadius: 3 }}>
-                            {m.partOfSpeech}
-                          </span>
+                          <span className="meaning-pos">{m.partOfSpeech}</span>
                         )}
-                        <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#1E293B' }}>
-                          {m.vietnamese}
-                        </span>
+                        <span className="meaning-vi">{m.vietnamese}</span>
                       </div>
                       {m.example && (
-                        <div style={{ fontSize: '0.82rem', color: '#475569', marginTop: 4, fontStyle: 'italic' }}>
+                        <div className="meaning-example">
                           "{m.example}"
                         </div>
                       )}
@@ -381,19 +463,19 @@ export default function FlashcardReview({
                   ))}
 
                   {currentCard?.collocations && (
-                    <div style={{ fontSize: '0.8rem', color: '#64748B', marginTop: 4 }}>
+                    <div className="back-extra-note">
                       <strong>Cụm từ:</strong> {currentCard.collocations}
                     </div>
                   )}
 
                   {currentCard?.mnemonic && (
-                    <div style={{ fontSize: '0.8rem', color: '#047857', marginTop: 2 }}>
+                    <div className="back-extra-note mnemonic">
                       <strong>Mẹo nhớ:</strong> {currentCard.mnemonic}
                     </div>
                   )}
                 </div>
 
-                <div className="card-flip-hint" style={{ marginTop: 8 }}>
+                <div className="card-flip-hint">
                   <RotateCw size={14} /> Chạm để lật lại mặt trước
                 </div>
               </div>
@@ -401,30 +483,16 @@ export default function FlashcardReview({
           </div>
 
           {/* Action Buttons: Forgotten vs Remembered */}
-          <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+          <div className="flashcard-actions-grid">
             <button
-              className="btn"
-              style={{
-                flex: 1,
-                background: '#FEE2E2',
-                color: '#B91C1C',
-                border: '1px solid #FECACA',
-                boxShadow: '0 2px 8px rgba(239, 68, 68, 0.12)'
-              }}
+              className="btn btn-action-forgotten"
               onClick={() => handleAnswer(false)}
             >
               <XCircle size={20} /> Chưa nhớ
             </button>
 
             <button
-              className="btn"
-              style={{
-                flex: 1,
-                background: '#DCFCE7',
-                color: '#15803D',
-                border: '1px solid #BBF7D0',
-                boxShadow: '0 2px 8px rgba(34, 197, 94, 0.12)'
-              }}
+              className="btn btn-action-mastered"
               onClick={() => handleAnswer(true)}
             >
               <CheckCircle2 size={20} /> Đã thuộc

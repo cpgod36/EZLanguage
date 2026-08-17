@@ -7,6 +7,7 @@ import {
   GoogleAuthProvider,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendEmailVerification,
   signOut,
   onAuthStateChanged
 } from 'firebase/auth';
@@ -137,9 +138,40 @@ export async function loginWithEmail(email, password) {
 export async function registerWithEmail(email, password) {
   try {
     const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
+    // Send verification email right upon registration
+    try {
+      await sendEmailVerification(result.user);
+    } catch (mailErr) {
+      console.warn('Could not auto-send verification email:', mailErr);
+    }
     return { success: true, user: result.user };
   } catch (err) {
     return { success: false, error: formatAuthError(err) };
+  }
+}
+
+// Resend verification email
+export async function sendVerificationEmailToUser(user) {
+  const targetUser = user || auth.currentUser;
+  if (!targetUser) return { success: false, error: 'Không tìm thấy người dùng hiện tại' };
+  try {
+    await sendEmailVerification(targetUser);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: formatAuthError(err) };
+  }
+}
+
+// Reload user auth to check updated emailVerified status
+export async function reloadUserAuth() {
+  try {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      return { success: true, user: auth.currentUser };
+    }
+    return { success: false, error: 'Chưa đăng nhập' };
+  } catch (err) {
+    return { success: false, error: err.message };
   }
 }
 
@@ -175,12 +207,14 @@ export async function saveNoteToCloud(userId, note) {
   try {
     const noteId = note.id || `note_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
     const noteDoc = doc(db, 'users', userId, 'notes', noteId);
+    const now = new Date().toISOString();
     
     // Clean undefined fields before writing
     const cleanedNote = JSON.parse(JSON.stringify({
       ...note,
       id: noteId,
-      updatedAt: new Date().toISOString()
+      createdAt: note.createdAt || now,
+      updatedAt: now
     }));
 
     await setDoc(noteDoc, cleanedNote, { merge: true });
@@ -206,10 +240,16 @@ export async function syncLocalNotesToCloud(userId, localNotes) {
   if (!userId || !localNotes || localNotes.length === 0) return;
   try {
     const batch = writeBatch(db);
+    const now = new Date().toISOString();
     localNotes.forEach(note => {
       const noteId = note.id || `note_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
       const noteDoc = doc(db, 'users', userId, 'notes', noteId);
-      const cleaned = JSON.parse(JSON.stringify({ ...note, id: noteId }));
+      const cleaned = JSON.parse(JSON.stringify({
+        ...note,
+        id: noteId,
+        createdAt: note.createdAt || now,
+        updatedAt: note.updatedAt || now
+      }));
       batch.set(noteDoc, cleaned, { merge: true });
     });
     await batch.commit();

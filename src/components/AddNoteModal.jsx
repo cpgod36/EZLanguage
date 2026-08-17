@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, Plus, Trash2, Loader2, AlertTriangle, Check, BookOpen, Volume2 } from 'lucide-react';
+import { X, Sparkles, Plus, Trash2, Loader2, AlertTriangle, Check, BookOpen, Volume2, Eye } from 'lucide-react';
 import { NOTE_TYPES, findExistingNoteByTerm } from '../utils/storage';
 import { lookupWord } from '../utils/dictionaryApi';
 import { playPronunciation } from '../utils/speech';
@@ -95,38 +95,59 @@ export default function AddNoteModal({
     setIsLookingUp(false);
 
     if (result.success && result.data) {
-      const { ipa: newIpa, audioUrl: newAudio, partOfSpeech, example, englishDefinitions, synonyms } = result.data;
+      const {
+        vietnamese,
+        ipa: newIpa,
+        audioUrl: newAudio,
+        partOfSpeech,
+        englishDef,
+        example,
+        synonyms,
+        suggestedType,
+        additionalMeanings
+      } = result.data;
+
       if (newIpa) setIpa(newIpa);
       if (newAudio) setAudioUrl(newAudio);
 
-      // Update primary meaning if empty
+      // Auto-switch type if user is currently on default 'word' and a phrasal verb / idiom is detected
+      if (type === 'word' && suggestedType && suggestedType !== 'word') {
+        setType(suggestedType);
+      }
+
+      // Update primary meaning
       setMeanings((prev) => {
         const updated = [...prev];
         if (updated[0]) {
-          updated[0].partOfSpeech = partOfSpeech || updated[0].partOfSpeech;
-          if (!updated[0].englishDef && englishDefinitions?.[0]?.definition) {
-            updated[0].englishDef = englishDefinitions[0].definition;
-          }
-          if (!updated[0].example && example) {
-            updated[0].example = example;
-          }
+          if (partOfSpeech) updated[0].partOfSpeech = partOfSpeech;
+          if (!updated[0].vietnamese && vietnamese) updated[0].vietnamese = vietnamese;
+          if (!updated[0].englishDef && englishDef) updated[0].englishDef = englishDef;
+          if (!updated[0].example && example) updated[0].example = example;
         }
+
+        // If user had only 1 empty meaning and API has additional senses, append them
+        if (prev.length === 1 && (!prev[0].vietnamese || prev[0].vietnamese === vietnamese) && additionalMeanings && additionalMeanings.length > 0) {
+          additionalMeanings.forEach(am => {
+            if (am.vietnamese && am.vietnamese !== vietnamese) {
+              updated.push(am);
+            }
+          });
+        }
+
         return updated;
       });
 
       if (synonyms && synonyms.length > 0 && !collocations) {
-        setCollocations(`Synonyms: ${synonyms.join(', ')}`);
+        setCollocations(`Từ đồng nghĩa: ${synonyms.join(', ')}`);
       }
 
       setLookupMessage({
         type: 'success',
-        text: 'Đã tự động lấy phiên âm IPA và định nghĩa từ Free Dictionary API!'
+        text: 'Đã tự động điền nghĩa tiếng Việt, phát âm IPA và định nghĩa!'
       });
 
       // Play pronunciation preview
-      if (newAudio || newIpa) {
-        playPronunciation(term, newAudio);
-      }
+      playPronunciation(term, newAudio);
     } else {
       setLookupMessage({
         type: 'error',
@@ -285,7 +306,7 @@ export default function AddNoteModal({
                     onSwitchToEditNote(duplicateWarning);
                   }}
                 >
-                  👁️ Mở thẻ cũ để sửa
+                  <Eye size={15} /> Mở thẻ cũ để sửa
                 </button>
                 <button
                   type="button"
@@ -295,7 +316,7 @@ export default function AddNoteModal({
                     setDuplicateWarning(null);
                   }}
                 >
-                  ⚡ Vẫn tạo thẻ mới
+                  <Plus size={15} /> Vẫn tạo thẻ mới
                 </button>
               </div>
             </div>

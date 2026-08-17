@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { BookOpen, Mail, Lock, LogIn, UserPlus, ArrowRight, ShieldCheck, AlertCircle, Loader2, Sparkles, ChevronRight } from 'lucide-react';
+import { BookOpen, Mail, Lock, LogIn, UserPlus, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 import { loginWithEmail, registerWithEmail } from '../utils/firebase';
 
-export default function LoginScreen({ onLoginWithGoogle, onContinueAsGuest, onAuthSuccess }) {
+export default function LoginScreen({ onLoginWithGoogle, onAuthSuccess }) {
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -172,18 +172,6 @@ export default function LoginScreen({ onLoginWithGoogle, onContinueAsGuest, onAu
             )}
           </button>
         </form>
-
-        {/* Guest Mode Link */}
-        <div className="guest-action">
-          <button
-            type="button"
-            className="guest-link-btn"
-            onClick={onContinueAsGuest}
-          >
-            <span>Dùng thử chế độ Offline (Khách)</span>
-            <ChevronRight size={15} />
-          </button>
-        </div>
 
         {/* Trust Badge */}
         <div className="trust-footer">

@@ -10,48 +10,107 @@ const SETTINGS_KEY = 'ezlanguage_settings_v1';
 export const NOTE_TYPES = {
   word: {
     id: 'word',
+    shortTitle: 'Vocabulary',
     label: 'Từ vựng',
     englishLabel: 'Word',
+    description: 'Từ đơn lẻ có nghĩa độc lập cấu tạo nên câu',
     colorKey: 'mint',
     badgeClass: 'badge-mint',
     iconName: 'BookA',
-    placeholder: 'e.g. articulate, versatile, resilient'
+    placeholder: 'e.g. articulate, versatile, resilient',
+    explanation: {
+      concept: 'Từ đơn (Single Words) có ngữ nghĩa độc lập thuộc các từ loại như Danh từ, Động từ, Tính từ, Trạng từ... đóng vai trò là những viên gạch nền móng xây dựng nên câu văn.',
+      format: 'Bao gồm từ gốc, phiên âm IPA, trọng âm, từ loại (n, v, adj, adv) và các dạng biến đổi số nhiều/thì quá khứ.',
+      examples: [
+        { term: 'resilient (adj)', meaning: 'kiên cường, có khả năng phục hồi nhanh sau khó khăn' },
+        { term: 'articulate (adj/v)', meaning: 'ăn nói lưu loát, diễn đạt mạch lạc rõ ràng' }
+      ],
+      tip: 'Nên học từ vựng kèm phát âm IPA, câu ví dụ thực tế và các từ đồng nghĩa (synonyms) thay vì chỉ học dịch nghĩa đơn thuần.'
+    }
   },
   phrasal_verb: {
     id: 'phrasal_verb',
+    shortTitle: 'Phrasal Verb',
     label: 'Cụm động từ',
     englishLabel: 'Phrasal Verb',
+    description: 'Động từ kết hợp tiểu từ tạo nên tầng nghĩa mới',
     colorKey: 'sky',
     badgeClass: 'badge-sky',
     iconName: 'Layers',
-    placeholder: 'e.g. come up with, call off, figure out'
+    placeholder: 'e.g. come up with, call off, figure out',
+    explanation: {
+      concept: 'Cụm động từ là sự kết hợp giữa một Động từ (Verb) + một hoặc hai Tiểu từ/Giới từ (Particle/Preposition). Khi kết hợp, cụm từ mang một ý nghĩa hoàn toàn mới, thường khác hẳn nghĩa đen của từng từ cấu tạo.',
+      format: 'Cấu trúc: Verb + Particle (up, off, out, in, down, with...). Phân loại gồm: Cụm tách được (Separable) và Cụm không tách được (Inseparable).',
+      examples: [
+        { term: 'come up with', meaning: 'nghĩ ra, nảy ra (ý tưởng, giải pháp) — Không tách rời' },
+        { term: 'call off', meaning: 'hủy bỏ (cuộc họp, sự kiện) — Có thể tách: call it off' },
+        { term: 'figure out', meaning: 'tìm ra cách giải quyết, hiểu ra vấn đề' }
+      ],
+      tip: 'Tuyệt đối không dịch từng từ theo nghĩa đen. Hãy liên tưởng hành động đi kèm hướng của tiểu từ (up, out, off...) và học theo cụm trọn vẹn.'
+    }
   },
   collocation_idiom: {
     id: 'collocation_idiom',
+    shortTitle: 'Collocation & Idiom',
     label: 'Cụm từ & Thành ngữ',
     englishLabel: 'Collocation & Idiom',
+    description: 'Cụm từ đi đôi tự nhiên & thành ngữ mang nghĩa bóng',
     colorKey: 'honey',
     badgeClass: 'badge-honey',
     iconName: 'Sparkles',
-    placeholder: 'e.g. heavy rain, break the ice, under the weather'
+    placeholder: 'e.g. heavy rain, break the ice, under the weather',
+    explanation: {
+      concept: 'Collocation là sự kết hợp các từ đi đôi với nhau một cách tự nhiên theo thói quen của người bản ngữ. Idiom (Thành ngữ) là cụm từ cố định mang nghĩa bóng ẩn dụ sâu sắc, không thể hiểu theo nghĩa đen của từng từ đơn.',
+      format: 'Collocation: Adjective + Noun (heavy rain, không dùng strong rain), Verb + Noun (make a mistake, take a break). Idiom: Các cụm cố định giàu hình ảnh.',
+      examples: [
+        { term: 'break the ice', meaning: 'phá vỡ bầu không khí ngại ngùng ban đầu' },
+        { term: 'under the weather', meaning: 'cảm thấy hơi mệt mỏi, không được khỏe' },
+        { term: 'make a decision', meaning: 'đưa ra quyết định (đi với make, không đi với do)' }
+      ],
+      tip: 'Collocation giúp câu nói tự nhiên chuẩn bản xứ, còn Idiom giúp nâng cao điểm số Speaking/Writing và làm lời nói thêm sinh động.'
+    }
   },
   sentence_pattern: {
     id: 'sentence_pattern',
+    shortTitle: 'Sentence Pattern',
     label: 'Mẫu câu & Ngữ pháp',
     englishLabel: 'Pattern',
+    description: 'Khung cấu trúc câu & cú pháp ngữ pháp chuẩn',
     colorKey: 'lavender',
     badgeClass: 'badge-lavender',
     iconName: 'MessageSquareText',
-    placeholder: "e.g. It's high time + S + V-past, How come...?"
+    placeholder: "e.g. It's high time + S + V-past, How come...?",
+    explanation: {
+      concept: 'Khung mẫu câu (Sentence Patterns) và các cấu trúc ngữ pháp chuẩn hóa đóng vai trò như chiếc khuôn đúc, giúp bạn lắp ghép nhiều từ vựng khác nhau để tạo thành vô số câu nói đúng ngữ pháp và tự nhiên.',
+      format: 'Dạng công thức: S + V + O, Cấu trúc đảo ngữ, Câu điều kiện, Cấu trúc nhấn mạnh (Cleft sentences), Cấu trúc thời gian.',
+      examples: [
+        { term: "It's high time + S + V-past", meaning: 'Đã đến lúc ai đó cần phải làm gì (diễn tả sự cấp thiết)' },
+        { term: "How come + S + V?", meaning: 'Tại sao lại như thế? (Dùng trong văn nói thân mật thay cho Why)' },
+        { term: "No sooner had + S + V3 than...", meaning: 'Vừa mới... thì đã...' }
+      ],
+      tip: 'Hãy ghi nhớ công thức kèm theo 2-3 câu ví dụ gắn liền với trải nghiệm công việc hoặc cuộc sống hàng ngày của chính bạn.'
+    }
   },
   mistake_tip: {
     id: 'mistake_tip',
+    shortTitle: 'Mistake & Tip',
     label: 'Lỗi hay sai & Mẹo nhớ',
     englishLabel: 'Tip & Mistake',
+    description: 'Cặp từ dễ nhầm lẫn & mẹo nhớ siêu tốc',
     colorKey: 'coral',
     badgeClass: 'badge-coral',
     iconName: 'AlertCircle',
-    placeholder: 'e.g. affect vs effect, I agree (not I am agree)'
+    placeholder: 'e.g. affect vs effect, I agree (not I am agree)',
+    explanation: {
+      concept: 'Nơi tổng hợp các cặp từ dễ gây nhầm lẫn (Confusing Words), các lỗi sai phổ biến do tư duy dịch từ tiếng Việt (Vietnamese interference), cùng những câu thần chú hoặc mẹo ghi nhớ mẹo (Mnemonics) độc đáo.',
+      format: 'Dạng so sánh: Từ A vs Từ B, Lỗi sai phổ biến ❌ -> Cách dùng chuẩn ✅, Mẹo ghi nhớ hình ảnh/âm thanh tương tự.',
+      examples: [
+        { term: 'affect (verb) vs effect (noun)', meaning: 'affect là động từ (tác động), effect là danh từ (kết quả/ảnh hưởng)' },
+        { term: '❌ I am agree ➔ ✅ I agree', meaning: 'agree bản thân nó đã là động từ, không dùng kèm am' },
+        { term: '❌ She suggested me to go ➔ ✅ She suggested that I go', meaning: 'suggest không đi với to-V khi có tút từ chỉ người' }
+      ],
+      tip: 'Mỗi khi làm bài kiểm tra hoặc giao tiếp mà bị bắt lỗi, hãy lập tức lưu vào mục này để biến điểm yếu thành điểm mạnh.'
+    }
   }
 };
 
@@ -220,6 +279,38 @@ export function saveNotes(notes) {
   }
 }
 
+export function isToday(dateString) {
+  if (!dateString) return false;
+  try {
+    const noteDate = new Date(dateString);
+    if (isNaN(noteDate.getTime())) return false;
+    const today = new Date();
+    return (
+      noteDate.getFullYear() === today.getFullYear() &&
+      noteDate.getMonth() === today.getMonth() &&
+      noteDate.getDate() === today.getDate()
+    );
+  } catch (e) {
+    return false;
+  }
+}
+
+export function formatDateTime(isoString) {
+  if (!isoString) return '';
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return '';
+    const hours = String(d.getHours()).padStart(2, '0');
+    const mins = String(d.getMinutes()).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${hours}:${mins}, ${day}/${month}/${year}`;
+  } catch (e) {
+    return '';
+  }
+}
+
 export function findExistingNoteByTerm(term, notes) {
   if (!term || !term.trim()) return null;
   const clean = term.trim().toLowerCase();
@@ -229,13 +320,19 @@ export function findExistingNoteByTerm(term, notes) {
 export function addOrUpdateNote(noteData, notes) {
   const now = new Date().toISOString();
   let updatedList;
+  let savedNote;
   
   if (noteData.id) {
     // Updating existing note
-    updatedList = notes.map(n => n.id === noteData.id ? { ...noteData, updatedAt: now } : n);
+    savedNote = {
+      ...noteData,
+      updatedAt: now,
+      createdAt: noteData.createdAt || now
+    };
+    updatedList = notes.map(n => n.id === noteData.id ? savedNote : n);
   } else {
-    // Create new
-    const newNote = {
+    // Create new note
+    savedNote = {
       ...noteData,
       id: 'note_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
       createdAt: now,
@@ -245,11 +342,11 @@ export function addOrUpdateNote(noteData, notes) {
       isStarred: noteData.isStarred || false,
       lastReviewedAt: null
     };
-    updatedList = [newNote, ...notes];
+    updatedList = [savedNote, ...notes];
   }
 
   saveNotes(updatedList);
-  return updatedList;
+  return { updatedList, savedNote };
 }
 
 export function addMeaningToNote(existingNoteId, newMeaning, notes) {

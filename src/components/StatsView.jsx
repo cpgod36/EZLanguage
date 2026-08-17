@@ -1,6 +1,6 @@
 import React from 'react';
 import { Flame, Trophy, Star, CheckCircle2, BookOpen, Sparkles, TrendingUp } from 'lucide-react';
-import { NOTE_TYPES } from '../utils/storage';
+import { NOTE_TYPES, isToday } from '../utils/storage';
 
 export default function StatsView({ notes, streakInfo }) {
   const totalNotes = notes.length;
@@ -9,8 +9,7 @@ export default function StatsView({ notes, streakInfo }) {
   const newNotes = notes.filter(n => n.masteryLevel === 'new').length;
   const starredNotes = notes.filter(n => n.isStarred).length;
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const addedToday = notes.filter(n => n.createdAt && n.createdAt.startsWith(todayStr)).length;
+  const addedToday = notes.filter(n => isToday(n.createdAt)).length;
   const dailyGoal = 5;
   const dailyGoalPercent = Math.min(100, Math.round((addedToday / dailyGoal) * 100));
 
@@ -121,8 +120,8 @@ export default function StatsView({ notes, streakInfo }) {
 
         <div style={{ background: 'white', padding: '14px', borderRadius: 16, border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-subtle)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#64748B', fontSize: '0.8rem', fontWeight: 600 }}>
-            <Star size={16} color="#F59E0B" />
-            Mục yêu thích (⭐)
+            <Star size={16} color="#F59E0B" fill="#F59E0B" />
+            Mục yêu thích
           </div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#D97706', marginTop: 4 }}>
             {starredNotes}
