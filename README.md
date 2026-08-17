@@ -1,7 +1,7 @@
 # 📘 EZLanguage — Personal Smart English Notebook & Flashcard Companion
 
 <p align="center">
-  <img src="public/favicon.svg" width="96" height="96" alt="EZLanguage Logo" />
+  <img src="public/brand-logo.svg" width="280" alt="EZLanguage Logo" />
 </p>
 
 <p align="center">

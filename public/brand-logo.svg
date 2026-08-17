@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 76" width="340" height="76" fill="none">
+  <defs>
+    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#4F46E5" />
+    </linearGradient>
+    <filter id="glow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#4F46E5" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- App Icon Squircle -->
+  <g filter="url(#glow)">
+    <rect x="6" y="8" width="60" height="60" rx="18" fill="url(#brandGradient)" />
+    <!-- Open Book Vector -->
+    <path d="M22 26 C22 23, 27 22, 36 25 C45 22, 50 23, 50 26 L50 50 C50 50, 44 48, 36 50 C28 48, 22 50, 22 50 Z" fill="white" fill-opacity="0.96" />
+    <path d="M36 25 L36 50" stroke="#6366F1" stroke-width="2" stroke-linecap="round" />
+    <circle cx="36" cy="36" r="4.5" fill="#F59E0B" />
+  </g>
+
+  <!-- Typography matching in-app branding -->
+  <text x="82" y="50" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="34" font-weight="900" letter-spacing="-0.8px">
+    <tspan fill="#6366F1">EZ</tspan><tspan fill="#4F46E5">Language</tspan>
+  </text>
+</svg>
