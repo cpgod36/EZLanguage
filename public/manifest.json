@@ -1,0 +1,18 @@
+{
+  "name": "EZLanguage - Sổ Tay Học Tiếng Anh",
+  "short_name": "EZLanguage",
+  "description": "Ghi chú từ vựng, phrasal verbs, idioms, ôn tập flashcard cho người học tiếng Anh",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
