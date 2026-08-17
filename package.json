@@ -1,7 +1,13 @@
 {
   "name": "ezlanguage-pwa",
-  "private": true,
   "version": "1.0.0",
+  "description": "Personal Smart English Notebook & Flashcard Companion tailored for iOS and modern web browsers",
+  "author": "Cao Phan (@cpgod36)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cpgod36/EZLanguage.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
