@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import BottomNav from './components/BottomNav';
 import NoteList from './components/NoteList';
@@ -6,7 +6,7 @@ import AddNoteModal from './components/AddNoteModal';
 import FlashcardReview from './components/FlashcardReview';
 import StatsView from './components/StatsView';
 import BackupSettings from './components/BackupSettings';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2, RotateCcw } from 'lucide-react';
 import {
   getStoredNotes,
   saveNotes,
@@ -28,9 +28,12 @@ export default function App() {
   const [sortBy, setSortBy] = useState('a-z');
   const [showStarredOnly, setShowStarredOnly] = useState(false);
 
-  // Modal State
+  // Modal & Action Sheet States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editNote, setEditNote] = useState(null);
+  const [pendingDeleteNote, setPendingDeleteNote] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+  const toastTimeoutRef = useRef(null);
 
   // Update streak on mount
   useEffect(() => {
@@ -43,9 +46,32 @@ export default function App() {
     setStreakInfo(getStreakInfo());
   };
 
-  const handleDeleteNote = (id) => {
-    const updated = deleteNote(id, notes);
+  const handleTriggerDelete = (note) => {
+    setPendingDeleteNote(note);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!pendingDeleteNote) return;
+    const deletedItem = pendingDeleteNote;
+    const previousList = [...notes];
+    const updated = deleteNote(deletedItem.id, notes);
     setNotes(updated);
+    setPendingDeleteNote(null);
+
+    // Show instant Undo Toast
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setToastMessage({
+      text: `Đã xóa "${deletedItem.term}"`,
+      undo: () => {
+        saveNotes(previousList);
+        setNotes(previousList);
+        setToastMessage(null);
+      }
+    });
+
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+    }, 4500);
   };
 
   const handleToggleStar = (id) => {
@@ -104,7 +130,7 @@ export default function App() {
             showStarredOnly={showStarredOnly}
             sortBy={sortBy}
             onEditNote={handleEditNote}
-            onDeleteNote={handleDeleteNote}
+            onTriggerDelete={handleTriggerDelete}
             onToggleStar={handleToggleStar}
             onAddMeaningDirectly={handleAddMeaningDirectly}
             onOpenAddModal={handleOpenAddModal}
@@ -159,6 +185,41 @@ export default function App() {
         allNotes={notes}
         onSwitchToEditNote={handleSwitchToEditNote}
       />
+
+      {/* iOS Action Sheet for Delete Confirmation (Zero Lag) */}
+      {pendingDeleteNote && (
+        <div className="action-sheet-overlay" onClick={() => setPendingDeleteNote(null)}>
+          <div className="action-sheet-card" onClick={(e) => e.stopPropagation()}>
+            <div className="action-sheet-group">
+              <div className="action-sheet-title">
+                Bạn có chắc muốn xóa ghi chú "{pendingDeleteNote.term}"?
+              </div>
+              <button
+                className="action-sheet-btn danger"
+                onClick={handleConfirmDelete}
+              >
+                <Trash2 size={18} /> Xóa ghi chú
+              </button>
+            </div>
+            <button
+              className="action-sheet-btn cancel"
+              onClick={() => setPendingDeleteNote(null)}
+            >
+              Hủy
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Instant Undo Toast */}
+      {toastMessage && (
+        <div className="toast-container">
+          <span style={{ fontSize: '0.88rem' }}>{toastMessage.text}</span>
+          <button className="toast-undo-btn" onClick={toastMessage.undo}>
+            <RotateCcw size={13} style={{ display: 'inline', marginRight: 4 }} /> Hoàn tác
+          </button>
+        </div>
+      )}
     </div>
   );
 }

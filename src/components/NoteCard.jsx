@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { Volume2, Star, MoreVertical, Edit2, Trash2, PlusCircle, Sparkles, Lightbulb, Tag, CheckCircle2 } from 'lucide-react';
+import React, { useState, memo } from 'react';
+import { Volume2, Star, MoreVertical, Edit2, Trash2, PlusCircle, Sparkles, Lightbulb, CheckCircle2 } from 'lucide-react';
 import { NOTE_TYPES } from '../utils/storage';
 import { playPronunciation } from '../utils/speech';
 
-export default function NoteCard({
+function NoteCard({
   note,
   onEdit,
-  onDelete,
+  onTriggerDelete,
   onToggleStar,
   onAddMeaningDirectly
 }) {
@@ -148,9 +148,7 @@ export default function NoteCard({
                     }}
                     onClick={() => {
                       setShowMenu(false);
-                      if (confirm(`Bạn có chắc muốn xóa ghi chú "${note.term}"?`)) {
-                        onDelete(note.id);
-                      }
+                      onTriggerDelete(note);
                     }}
                   >
                     <Trash2 size={15} color="#DC2626" />
@@ -189,7 +187,7 @@ export default function NoteCard({
                   <span>"{m.example}"</span>
                   <button
                     className="audio-btn"
-                    style={{ width: 22, height: 22, flexShrink: 0 }}
+                    style={{ width: 24, height: 24, flexShrink: 0 }}
                     onClick={(e) => {
                       e.stopPropagation();
                       playPronunciation(m.example);
@@ -236,3 +234,5 @@ export default function NoteCard({
     </div>
   );
 }
+
+export default memo(NoteCard);

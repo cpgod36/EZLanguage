@@ -9,7 +9,7 @@ export default function NoteList({
   showStarredOnly,
   sortBy,
   onEditNote,
-  onDeleteNote,
+  onTriggerDelete,
   onToggleStar,
   onAddMeaningDirectly,
   onOpenAddModal
@@ -148,7 +148,7 @@ export default function NoteList({
                 key={note.id}
                 note={note}
                 onEdit={onEditNote}
-                onDelete={onDeleteNote}
+                onTriggerDelete={onTriggerDelete}
                 onToggleStar={onToggleStar}
                 onAddMeaningDirectly={onAddMeaningDirectly}
               />
@@ -162,7 +162,7 @@ export default function NoteList({
               key={note.id}
               note={note}
               onEdit={onEditNote}
-              onDelete={onDeleteNote}
+              onTriggerDelete={onTriggerDelete}
               onToggleStar={onToggleStar}
               onAddMeaningDirectly={onAddMeaningDirectly}
             />
