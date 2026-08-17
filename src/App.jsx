@@ -52,9 +52,9 @@ export default function App() {
 
   // Auth Listener & Realtime Firestore Sync
   useEffect(() => {
-    checkRedirectAuth().then((user) => {
-      if (user) {
-        setCurrentUser(user);
+    checkRedirectAuth().then((res) => {
+      if (res && res.user) {
+        setCurrentUser(res.user);
         setIsGuestMode(false);
       }
     });
@@ -80,7 +80,6 @@ export default function App() {
         setNotes(cloudNotes);
         saveNotes(cloudNotes);
       } else {
-        // If cloud is empty, upload current local notes to cloud
         const currentLocal = getStoredNotes();
         if (currentLocal && currentLocal.length > 0) {
           syncLocalNotesToCloud(currentUser.uid, currentLocal);
@@ -103,8 +102,11 @@ export default function App() {
         text: `Chào mừng ${res.user.displayName || res.user.email}! Đã bật đồng bộ Đám mây.`
       });
       setTimeout(() => setToastMessage(null), 4000);
-    } else if (res.error) {
-      alert('Đăng nhập không thành công: ' + res.error);
+      return { success: true };
+    } else if (res.redirecting) {
+      return { success: true, redirecting: true };
+    } else {
+      return { success: false, error: res.error || 'Đăng nhập không thành công' };
     }
   };
 

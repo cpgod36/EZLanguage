@@ -36,35 +36,78 @@ export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-// Check redirect result on mobile devices if popup was blocked
+// Check redirect result on mobile devices
 export async function checkRedirectAuth() {
   try {
     const result = await getRedirectResult(auth);
     if (result && result.user) {
-      return result.user;
+      return { success: true, user: result.user };
     }
   } catch (err) {
     console.error('Redirect auth error:', err);
+    return { success: false, error: formatAuthError(err) };
   }
   return null;
 }
 
-// Google Sign-In (Try Popup first, fallback to Redirect on Safari if popup blocked)
+// Convert Firebase Auth error codes to helpful Vietnamese messages
+export function formatAuthError(err) {
+  if (!err) return 'Đã có lỗi xảy ra khi đăng nhập.';
+  const code = err.code || '';
+  const message = err.message || '';
+
+  if (code === 'auth/unauthorized-domain') {
+    const currentHost = window.location.hostname;
+    return `Tên miền "${currentHost}" chưa được thêm vào Authorized Domains trên Firebase Console. Vui lòng vào Firebase > Authentication > Settings > Authorized domains và thêm "${currentHost}".`;
+  }
+  if (code === 'auth/operation-not-allowed') {
+    return 'Chưa BẬT phương thức đăng nhập Google trên Firebase Console! Vui lòng vào Firebase > Authentication > Sign-in method và Bật (Enable) Google Provider.';
+  }
+  if (code === 'auth/popup-closed-by-user') {
+    return 'Bạn đã đóng cửa sổ đăng nhập Google trước khi hoàn tất.';
+  }
+  if (code === 'auth/cancelled-popup-request') {
+    return 'Yêu cầu đăng nhập bị hủy do có cửa sổ khác mở cùng lúc.';
+  }
+  if (code === 'auth/network-request-failed') {
+    return 'Không thể kết nối tới Google. Vui lòng kiểm tra lại kết nối mạng Internet.';
+  }
+
+  return `Lỗi đăng nhập (${code}): ${message}`;
+}
+
+// Google Sign-In with smart iOS Standalone detection
 export async function loginWithGoogle() {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
+  // On iOS standalone PWA (Home screen), popups are blocked by iOS WebKit, so use redirect
+  if (isIOS && isStandalone) {
+    try {
+      await signInWithRedirect(auth, googleProvider);
+      return { success: true, redirecting: true };
+    } catch (redirectErr) {
+      return { success: false, error: formatAuthError(redirectErr) };
+    }
+  }
+
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return { success: true, user: result.user };
   } catch (err) {
-    console.warn('Popup sign in failed, trying redirect...', err);
+    console.warn('Popup sign in error:', err);
+
+    // If popup was blocked on mobile browser, fallback to redirect
     if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
       try {
         await signInWithRedirect(auth, googleProvider);
         return { success: true, redirecting: true };
       } catch (redirectErr) {
-        return { success: false, error: redirectErr.message };
+        return { success: false, error: formatAuthError(redirectErr) };
       }
     }
-    return { success: false, error: err.message };
+
+    return { success: false, error: formatAuthError(err) };
   }
 }
 

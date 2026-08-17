@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
-import { BookOpen, Sparkles, Layers, Cloud, Smartphone, Flame, ArrowRight, ShieldCheck, CheckCircle2, Loader2 } from 'lucide-react';
+import { BookOpen, Sparkles, Layers, Cloud, ArrowRight, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function LoginScreen({ onLoginWithGoogle, onContinueAsGuest }) {
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   const handleGoogleClick = async () => {
     setLoading(true);
-    await onLoginWithGoogle();
+    setErrorMessage(null);
+    const res = await onLoginWithGoogle();
     setLoading(false);
+    if (res && res.error) {
+      setErrorMessage(res.error);
+    }
   };
 
   return (
@@ -29,6 +34,33 @@ export default function LoginScreen({ onLoginWithGoogle, onContinueAsGuest }) {
             Sổ tay ghi chú & ôn tập tiếng Anh cá nhân thông minh, tối ưu trải nghiệm trên iPhone.
           </p>
         </div>
+
+        {/* Error Alert Banner if login failed */}
+        {errorMessage && (
+          <div
+            style={{
+              width: '100%',
+              background: '#FEF2F2',
+              border: '1px solid #FECACA',
+              borderRadius: 12,
+              padding: '12px 14px',
+              color: '#991B1B',
+              fontSize: '0.82rem',
+              lineHeight: 1.45,
+              textAlign: 'left',
+              display: 'flex',
+              gap: 8,
+              alignItems: 'flex-start',
+              marginBottom: 16
+            }}
+          >
+            <AlertCircle size={18} style={{ flexShrink: 0, marginTop: 1, color: '#DC2626' }} />
+            <div>
+              <strong>Không thể đăng nhập:</strong>
+              <div style={{ marginTop: 2 }}>{errorMessage}</div>
+            </div>
+          </div>
+        )}
 
         {/* Feature Highlights Grid */}
         <div className="features-preview-grid">
