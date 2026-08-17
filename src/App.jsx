@@ -16,11 +16,23 @@ import {
   updateNoteMastery,
   getStreakInfo
 } from './utils/storage';
+import {
+  auth,
+  onAuthStateChanged,
+  loginWithGoogle,
+  logoutUser,
+  subscribeToUserNotes,
+  saveNoteToCloud,
+  deleteNoteFromCloud,
+  syncLocalNotesToCloud,
+  checkRedirectAuth
+} from './utils/firebase';
 
 export default function App() {
   const [notes, setNotes] = useState(() => getStoredNotes());
   const [streakInfo, setStreakInfo] = useState(() => getStreakInfo());
   const [activeTab, setActiveTab] = useState('notes');
+  const [currentUser, setCurrentUser] = useState(null);
 
   // Filters and Sorting
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,15 +47,80 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState(null);
   const toastTimeoutRef = useRef(null);
 
-  // Update streak on mount
+  // Auth Listener & Realtime Firestore Sync
   useEffect(() => {
-    setStreakInfo(getStreakInfo());
+    // Check redirect auth on mobile
+    checkRedirectAuth().then((user) => {
+      if (user) setCurrentUser(user);
+    });
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+
+    return () => unsubscribeAuth();
   }, []);
 
+  // Realtime Cloud Sync when user is logged in
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const unsubscribeFirestore = subscribeToUserNotes(currentUser.uid, (cloudNotes) => {
+      if (cloudNotes && cloudNotes.length > 0) {
+        setNotes(cloudNotes);
+        saveNotes(cloudNotes);
+      } else {
+        // If cloud is empty, upload current local notes to cloud
+        const currentLocal = getStoredNotes();
+        if (currentLocal && currentLocal.length > 0) {
+          syncLocalNotesToCloud(currentUser.uid, currentLocal);
+        }
+      }
+    });
+
+    return () => unsubscribeFirestore();
+  }, [currentUser]);
+
+  // Auth Handlers
+  const handleLogin = async () => {
+    const res = await loginWithGoogle();
+    if (res.success && res.user) {
+      setCurrentUser(res.user);
+      // Auto sync current local notes to new cloud account
+      syncLocalNotesToCloud(res.user.uid, notes);
+      setToastMessage({
+        text: `Chào mừng ${res.user.displayName || res.user.email}! Đã bật đồng bộ Đám mây.`
+      });
+      setTimeout(() => setToastMessage(null), 4000);
+    } else if (res.error) {
+      alert('Đăng nhập không thành công: ' + res.error);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logoutUser();
+    setCurrentUser(null);
+    setToastMessage({ text: 'Đã đăng xuất. Dữ liệu đang lưu an toàn trên máy.' });
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleForceSync = async () => {
+    if (!currentUser) return;
+    await syncLocalNotesToCloud(currentUser.uid, notes);
+    setToastMessage({ text: 'Đã đồng bộ toàn bộ ghi chú lên Google Cloud!' });
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // CRUD Operations
   const handleSaveNote = (noteData) => {
     const updated = addOrUpdateNote(noteData, notes);
     setNotes(updated);
     setStreakInfo(getStreakInfo());
+
+    // Sync to Cloud
+    if (currentUser) {
+      saveNoteToCloud(currentUser.uid, noteData);
+    }
   };
 
   const handleTriggerDelete = (note) => {
@@ -58,6 +135,11 @@ export default function App() {
     setNotes(updated);
     setPendingDeleteNote(null);
 
+    // Delete from Cloud
+    if (currentUser) {
+      deleteNoteFromCloud(currentUser.uid, deletedItem.id);
+    }
+
     // Show instant Undo Toast
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     setToastMessage({
@@ -65,6 +147,9 @@ export default function App() {
       undo: () => {
         saveNotes(previousList);
         setNotes(previousList);
+        if (currentUser) {
+          saveNoteToCloud(currentUser.uid, deletedItem);
+        }
         setToastMessage(null);
       }
     });
@@ -77,12 +162,20 @@ export default function App() {
   const handleToggleStar = (id) => {
     const updated = toggleStarNote(id, notes);
     setNotes(updated);
+    if (currentUser) {
+      const target = updated.find(n => n.id === id);
+      if (target) saveNoteToCloud(currentUser.uid, target);
+    }
   };
 
   const handleUpdateMastery = (id, isMastered) => {
     const updated = updateNoteMastery(id, isMastered, notes);
     setNotes(updated);
     setStreakInfo(getStreakInfo());
+    if (currentUser) {
+      const target = updated.find(n => n.id === id);
+      if (target) saveNoteToCloud(currentUser.uid, target);
+    }
   };
 
   const handleOpenAddModal = () => {
@@ -118,6 +211,9 @@ export default function App() {
         showStarredOnly={showStarredOnly}
         setShowStarredOnly={setShowStarredOnly}
         activeTab={activeTab}
+        currentUser={currentUser}
+        onLogin={handleLogin}
+        onLogout={handleLogout}
       />
 
       {/* Main Tab Content */}
@@ -155,6 +251,10 @@ export default function App() {
           <BackupSettings
             notes={notes}
             onNotesChange={(newNotes) => setNotes(newNotes)}
+            currentUser={currentUser}
+            onLogin={handleLogin}
+            onLogout={handleLogout}
+            onForceSyncToCloud={handleForceSync}
           />
         )}
       </main>
@@ -186,7 +286,7 @@ export default function App() {
         onSwitchToEditNote={handleSwitchToEditNote}
       />
 
-      {/* iOS Action Sheet for Delete Confirmation (Zero Lag) */}
+      {/* iOS Action Sheet for Delete Confirmation */}
       {pendingDeleteNote && (
         <div className="action-sheet-overlay" onClick={() => setPendingDeleteNote(null)}>
           <div className="action-sheet-card" onClick={(e) => e.stopPropagation()}>
@@ -215,9 +315,11 @@ export default function App() {
       {toastMessage && (
         <div className="toast-container">
           <span style={{ fontSize: '0.88rem' }}>{toastMessage.text}</span>
-          <button className="toast-undo-btn" onClick={toastMessage.undo}>
-            <RotateCcw size={13} style={{ display: 'inline', marginRight: 4 }} /> Hoàn tác
-          </button>
+          {toastMessage.undo && (
+            <button className="toast-undo-btn" onClick={toastMessage.undo}>
+              <RotateCcw size={13} style={{ display: 'inline', marginRight: 4 }} /> Hoàn tác
+            </button>
+          )}
         </div>
       )}
     </div>
