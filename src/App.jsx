@@ -7,6 +7,7 @@ import FlashcardReview from './components/FlashcardReview';
 import StatsView from './components/StatsView';
 import BackupSettings from './components/BackupSettings';
 import LoginScreen from './components/LoginScreen';
+import SplashScreen from './components/SplashScreen';
 import { Plus, Trash2, RotateCcw } from 'lucide-react';
 import {
   getStoredNotes,
@@ -214,8 +215,13 @@ export default function App() {
     setEditNote(targetNote);
   };
 
-  // Show Welcome / Login Screen if not logged in and not in guest mode
-  if (!isAuthChecking && !currentUser && !isGuestMode) {
+  // 1. While checking auth on startup, show clean splash screen to eliminate flash
+  if (isAuthChecking) {
+    return <SplashScreen />;
+  }
+
+  // 2. If not logged in and not in guest mode, show beautiful LoginScreen
+  if (!currentUser && !isGuestMode) {
     return (
       <LoginScreen
         onLoginWithGoogle={handleLogin}
@@ -234,6 +240,7 @@ export default function App() {
     );
   }
 
+  // 3. Main App View
   return (
     <div className="app-container">
       {/* Dynamic Header */}
