@@ -51,6 +51,7 @@ export default function App() {
   const [pendingDeleteNote, setPendingDeleteNote] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
   const toastTimeoutRef = useRef(null);
+  const initialCloudSyncDoneRef = useRef(false);
 
   // Auth Listener & Realtime Firestore Sync
   useEffect(() => {
@@ -70,17 +71,29 @@ export default function App() {
 
   // Realtime Cloud Sync when user is logged in
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      initialCloudSyncDoneRef.current = false;
+      return;
+    }
 
     const unsubscribeFirestore = subscribeToUserNotes(currentUser.uid, (cloudNotes) => {
       if (cloudNotes && cloudNotes.length > 0) {
         setNotes(cloudNotes);
         saveNotes(cloudNotes);
+        initialCloudSyncDoneRef.current = true;
       } else {
-        const currentLocal = getStoredNotes();
-        if (currentLocal && currentLocal.length > 0) {
-          syncLocalNotesToCloud(currentUser.uid, currentLocal);
+        // Only on the very first startup if cloud is empty, upload existing local notes
+        if (!initialCloudSyncDoneRef.current) {
+          initialCloudSyncDoneRef.current = true;
+          const currentLocal = getStoredNotes();
+          if (currentLocal && currentLocal.length > 0) {
+            syncLocalNotesToCloud(currentUser.uid, currentLocal);
+            return;
+          }
         }
+        // If user intentionally deleted cards down to 0, respect empty list
+        setNotes([]);
+        saveNotes([]);
       }
     });
 
@@ -363,6 +376,7 @@ export default function App() {
           setEditNote(null);
         }}
         onSave={handleSaveNote}
+        onDeleteNote={handleTriggerDelete}
         editNote={editNote}
         allNotes={notes}
         onSwitchToEditNote={handleSwitchToEditNote}

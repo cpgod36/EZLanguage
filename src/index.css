@@ -2599,6 +2599,206 @@ button, input, textarea, select {
   color: #334155;
 }
 
+/* =========================================================================
+   IPHONE 14 (390px Viewport) & MOBILE OPTIMIZATIONS
+   ========================================================================= */
+
+/* Prevent iOS Safari 16px auto-zoom when tapping inputs */
+@media screen and (max-width: 480px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+@media screen and (max-width: 430px) {
+  #root {
+    max-width: 100vw;
+  }
+
+  /* App Container & Header */
+  .app-header {
+    padding: calc(10px + var(--sat)) 14px 10px;
+    gap: 8px;
+  }
+
+  .brand-title {
+    font-size: 1.15rem;
+  }
+
+  .brand-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .streak-pill {
+    padding: 4px 10px;
+    font-size: 0.78rem;
+  }
+
+  .search-input {
+    padding: 8px 34px 8px 34px;
+    font-size: 16px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Main Scrollable Content Area */
+  .main-content {
+    padding: 12px 14px;
+    padding-bottom: calc(82px + var(--sab));
+  }
+
+  /* Folder Hub Cards */
+  .folders-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .folder-card {
+    padding: 13px 14px;
+    gap: 8px;
+    border-radius: 14px;
+  }
+
+  .folder-card-info .folder-title {
+    font-size: 0.98rem;
+  }
+
+  .folder-card-info .folder-desc {
+    font-size: 0.8rem;
+    line-height: 1.35;
+  }
+
+  /* Today's Notes Hero Card */
+  .today-notes-card {
+    padding: 14px 16px;
+    border-radius: 16px;
+    gap: 8px;
+  }
+
+  /* Note Cards */
+  .note-card {
+    padding: 14px 14px 12px;
+    border-radius: 16px;
+    margin-bottom: 12px;
+  }
+
+  .note-term {
+    font-size: 1.12rem;
+  }
+
+  .note-ipa {
+    font-size: 0.82rem;
+  }
+
+  .meaning-item {
+    padding: 8px 10px;
+    gap: 4px;
+  }
+
+  .meaning-vi {
+    font-size: 0.92rem;
+  }
+
+  .meaning-example {
+    font-size: 0.78rem;
+  }
+
+  /* Alphabet Index Jump Bar */
+  .alphabet-index-bar {
+    right: 2px;
+    padding: 2px 1px;
+    border-radius: 12px;
+  }
+
+  .alphabet-letter-btn {
+    width: 15px;
+    height: 14px;
+    font-size: 0.6rem;
+  }
+
+  /* Flashcard Review Screen */
+  .decks-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .deck-card {
+    padding: 14px;
+    border-radius: 16px;
+    gap: 10px;
+  }
+
+  .flashcard-stage {
+    min-height: 280px;
+  }
+
+  .flashcard-face {
+    padding: 20px 16px;
+    border-radius: 20px;
+  }
+
+  .flashcard-term {
+    font-size: 1.45rem;
+  }
+
+  .flashcard-meaning-vi {
+    font-size: 1.15rem;
+  }
+
+  /* Bottom Navigation Bar */
+  .bottom-nav {
+    padding: 6px 8px calc(6px + var(--sab));
+  }
+
+  .nav-item {
+    padding: 4px 10px;
+    font-size: 0.68rem;
+    gap: 2px;
+  }
+
+  /* Floating Action Button */
+  .fab-add {
+    bottom: calc(72px + var(--sab));
+    right: calc(max(14px, var(--sar)));
+    width: 50px;
+    height: 50px;
+  }
+
+  /* Modal Sheets */
+  .modal-sheet {
+    max-height: calc(90vh - var(--sat));
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+  }
+
+  .modal-header {
+    padding: 16px 16px 12px;
+  }
+
+  .modal-body {
+    padding: 14px 16px calc(24px + var(--sab));
+    gap: 14px;
+  }
+
+  .modal-title {
+    font-size: 1.15rem;
+  }
+
+  /* Login / Verify Cards */
+  .login-card,
+  .verify-card {
+    padding: 28px 18px 22px;
+    border-radius: 24px;
+  }
+
+  .verify-title {
+    font-size: 1.35rem;
+  }
+}
+
+
 
 
 

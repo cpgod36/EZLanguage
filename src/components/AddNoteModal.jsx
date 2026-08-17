@@ -8,6 +8,7 @@ export default function AddNoteModal({
   isOpen,
   onClose,
   onSave,
+  onDeleteNote,
   editNote,
   allNotes,
   onSwitchToEditNote
@@ -547,13 +548,43 @@ export default function AddNoteModal({
           </div>
 
           {/* Bottom Submit Buttons */}
-          <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-            <button type="button" className="btn btn-secondary" onClick={onClose} style={{ flex: 1 }}>
-              Hủy
-            </button>
-            <button type="submit" className="btn btn-primary" style={{ flex: 2 }}>
-              <Check size={18} /> {editNote ? 'Lưu cập nhật' : 'Thêm vào sổ tay'}
-            </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="button" className="btn btn-secondary" onClick={onClose} style={{ flex: 1 }}>
+                Hủy
+              </button>
+              <button type="submit" className="btn btn-primary" style={{ flex: 2 }}>
+                <Check size={18} /> {editNote ? 'Lưu cập nhật' : 'Thêm vào sổ tay'}
+              </button>
+            </div>
+
+            {editNote && onDeleteNote && (
+              <button
+                type="button"
+                className="btn"
+                style={{
+                  background: '#FEF2F2',
+                  color: '#DC2626',
+                  border: '1px solid #FECACA',
+                  padding: '10px 14px',
+                  borderRadius: 12,
+                  fontSize: '0.86rem',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  marginTop: 2,
+                  cursor: 'pointer'
+                }}
+                onClick={() => {
+                  onClose();
+                  onDeleteNote(editNote);
+                }}
+              >
+                <Trash2 size={16} /> Xóa thẻ ghi chú này
+              </button>
+            )}
           </div>
         </form>
       </div>

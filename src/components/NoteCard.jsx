@@ -68,7 +68,10 @@ function NoteCard({
             <div style={{ position: 'relative' }}>
               <button
                 className="icon-btn"
-                onClick={() => setShowMenu(!showMenu)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(!showMenu);
+                }}
                 title="Tùy chọn"
               >
                 <MoreVertical size={18} />
@@ -77,115 +80,131 @@ function NoteCard({
               {showMenu && (
                 <>
                   <div
-                    style={{ position: 'fixed', inset: 0, zIndex: 20 }}
-                    onClick={() => setShowMenu(false)}
+                    style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                    }}
                   />
                   <div
                     style={{
                       position: 'absolute',
                       right: 0,
                       top: '100%',
+                      marginTop: 4,
                       background: 'white',
-                      borderRadius: 12,
-                      boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                      borderRadius: 14,
+                      boxShadow: '0 12px 30px rgba(0,0,0,0.18)',
                       border: '1px solid rgba(0,0,0,0.08)',
-                      padding: '6px 0',
-                      zIndex: 25,
-                      minWidth: 175,
+                      padding: '6px',
+                      zIndex: 100,
+                      minWidth: 180,
                       display: 'flex',
-                      flexDirection: 'column'
+                      flexDirection: 'column',
+                      gap: 2
                     }}
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <button
                       style={{
                         background: 'none',
                         border: 'none',
-                        padding: '8px 14px',
+                        padding: '10px 12px',
+                        borderRadius: 8,
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 8,
+                        gap: 10,
                         fontSize: '0.85rem',
                         fontWeight: 600,
                         color: '#1E293B',
                         cursor: 'pointer',
                         textAlign: 'left'
                       }}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setShowMenu(false);
                         setShowHistoryModal(true);
                       }}
                     >
-                      <History size={15} color="#4F46E5" />
-                      Lịch sử hoạt động
+                      <History size={16} color="#4F46E5" />
+                      <span>Lịch sử hoạt động</span>
                     </button>
 
                     <button
                       style={{
                         background: 'none',
                         border: 'none',
-                        padding: '8px 14px',
+                        padding: '10px 12px',
+                        borderRadius: 8,
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 8,
+                        gap: 10,
                         fontSize: '0.85rem',
                         fontWeight: 600,
                         color: '#1E293B',
                         cursor: 'pointer',
                         textAlign: 'left'
                       }}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setShowMenu(false);
                         onAddMeaningDirectly(note);
                       }}
                     >
-                      <PlusCircle size={15} color="#059669" />
-                      Thêm nét nghĩa
+                      <PlusCircle size={16} color="#059669" />
+                      <span>Thêm nét nghĩa</span>
                     </button>
 
                     <button
                       style={{
                         background: 'none',
                         border: 'none',
-                        padding: '8px 14px',
+                        padding: '10px 12px',
+                        borderRadius: 8,
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 8,
+                        gap: 10,
                         fontSize: '0.85rem',
                         fontWeight: 600,
                         color: '#1E293B',
                         cursor: 'pointer',
                         textAlign: 'left'
                       }}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setShowMenu(false);
                         onEdit(note);
                       }}
                     >
-                      <Edit2 size={15} color="#64748B" />
-                      Chỉnh sửa thẻ
+                      <Edit2 size={16} color="#64748B" />
+                      <span>Chỉnh sửa thẻ</span>
                     </button>
+
+                    <div style={{ height: 1, background: '#F1F5F9', margin: '2px 0' }} />
 
                     <button
                       style={{
-                        background: 'none',
-                        border: 'none',
-                        padding: '8px 14px',
+                        background: '#FEF2F2',
+                        border: '1px solid #FEE2E2',
+                        padding: '10px 12px',
+                        borderRadius: 8,
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 8,
+                        gap: 10,
                         fontSize: '0.85rem',
-                        fontWeight: 600,
+                        fontWeight: 700,
                         color: '#DC2626',
                         cursor: 'pointer',
                         textAlign: 'left'
                       }}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setShowMenu(false);
                         onTriggerDelete(note);
                       }}
                     >
-                      <Trash2 size={15} color="#DC2626" />
-                      Xóa thẻ
+                      <Trash2 size={16} color="#DC2626" />
+                      <span>Xóa thẻ này</span>
                     </button>
                   </div>
                 </>
