@@ -6,6 +6,7 @@ import AddNoteModal from './components/AddNoteModal';
 import FlashcardReview from './components/FlashcardReview';
 import StatsView from './components/StatsView';
 import BackupSettings from './components/BackupSettings';
+import LoginScreen from './components/LoginScreen';
 import { Plus, Trash2, RotateCcw } from 'lucide-react';
 import {
   getStoredNotes,
@@ -33,6 +34,8 @@ export default function App() {
   const [streakInfo, setStreakInfo] = useState(() => getStreakInfo());
   const [activeTab, setActiveTab] = useState('notes');
   const [currentUser, setCurrentUser] = useState(null);
+  const [isGuestMode, setIsGuestMode] = useState(() => localStorage.getItem('ez_guest_mode') === 'true');
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   // Filters and Sorting
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,13 +52,20 @@ export default function App() {
 
   // Auth Listener & Realtime Firestore Sync
   useEffect(() => {
-    // Check redirect auth on mobile
     checkRedirectAuth().then((user) => {
-      if (user) setCurrentUser(user);
+      if (user) {
+        setCurrentUser(user);
+        setIsGuestMode(false);
+      }
     });
 
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
+      setIsAuthChecking(false);
+      if (user) {
+        setIsGuestMode(false);
+        localStorage.removeItem('ez_guest_mode');
+      }
     });
 
     return () => unsubscribeAuth();
@@ -86,7 +96,8 @@ export default function App() {
     const res = await loginWithGoogle();
     if (res.success && res.user) {
       setCurrentUser(res.user);
-      // Auto sync current local notes to new cloud account
+      setIsGuestMode(false);
+      localStorage.removeItem('ez_guest_mode');
       syncLocalNotesToCloud(res.user.uid, notes);
       setToastMessage({
         text: `Chào mừng ${res.user.displayName || res.user.email}! Đã bật đồng bộ Đám mây.`
@@ -100,8 +111,15 @@ export default function App() {
   const handleLogout = async () => {
     await logoutUser();
     setCurrentUser(null);
-    setToastMessage({ text: 'Đã đăng xuất. Dữ liệu đang lưu an toàn trên máy.' });
+    setIsGuestMode(false);
+    localStorage.removeItem('ez_guest_mode');
+    setToastMessage({ text: 'Đã đăng xuất tài khoản.' });
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleContinueAsGuest = () => {
+    setIsGuestMode(true);
+    localStorage.setItem('ez_guest_mode', 'true');
   };
 
   const handleForceSync = async () => {
@@ -117,7 +135,6 @@ export default function App() {
     setNotes(updated);
     setStreakInfo(getStreakInfo());
 
-    // Sync to Cloud
     if (currentUser) {
       saveNoteToCloud(currentUser.uid, noteData);
     }
@@ -135,12 +152,10 @@ export default function App() {
     setNotes(updated);
     setPendingDeleteNote(null);
 
-    // Delete from Cloud
     if (currentUser) {
       deleteNoteFromCloud(currentUser.uid, deletedItem.id);
     }
 
-    // Show instant Undo Toast
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     setToastMessage({
       text: `Đã xóa "${deletedItem.term}"`,
@@ -196,6 +211,16 @@ export default function App() {
   const handleSwitchToEditNote = (targetNote) => {
     setEditNote(targetNote);
   };
+
+  // Show Welcome / Login Screen if not logged in and not in guest mode
+  if (!isAuthChecking && !currentUser && !isGuestMode) {
+    return (
+      <LoginScreen
+        onLoginWithGoogle={handleLogin}
+        onContinueAsGuest={handleContinueAsGuest}
+      />
+    );
+  }
 
   return (
     <div className="app-container">
