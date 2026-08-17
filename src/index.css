@@ -1014,10 +1014,10 @@ button, input, textarea, select {
   width: 100%;
   max-width: 600px;
   background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-top: 1px solid var(--border-light);
-  padding: 6px 12px calc(6px + var(--sab));
+  padding: 6px 10px calc(6px + var(--sab));
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -1036,41 +1036,106 @@ button, input, textarea, select {
   font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
-  padding: 4px 14px;
+  padding: 4px 10px;
   border-radius: var(--radius-sm);
-  transition: color 0.1s ease;
+  transition: color 0.15s ease;
+  flex: 1;
 }
 
 .nav-item.active {
   color: var(--primary);
+  font-weight: 700;
 }
 
 .nav-item:active {
   transform: scale(0.94);
 }
 
-/* Floating Action Button */
-.fab-add {
-  position: fixed;
-  bottom: calc(75px + var(--sab));
-  right: calc(max(18px, var(--sar)));
-  width: 54px;
-  height: 54px;
-  border-radius: var(--radius-full);
-  background: linear-gradient(135deg, #6366F1, #4F46E5);
-  color: white;
-  border: none;
-  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+/* Center Elevated Floating Add Button */
+.nav-center-wrapper {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  z-index: 45;
-  transition: transform 0.15s ease;
+  width: 58px;
+  height: 44px;
+  flex-shrink: 0;
 }
 
-.fab-add:active {
-  transform: scale(0.92);
+.nav-center-btn {
+  position: absolute;
+  top: -18px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+  border: 3.5px solid #FFFFFF;
+  box-shadow: 0 8px 22px rgba(79, 70, 229, 0.42), 0 2px 6px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  z-index: 55;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  outline: none;
+}
+
+/* Ambient subtle breathing aura */
+.nav-center-pulse {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.3);
+  z-index: -1;
+  pointer-events: none;
+  animation: navCenterAura 2.6s ease-in-out infinite;
+}
+
+@keyframes navCenterAura {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(0.92);
+    opacity: 0.6;
+  }
+}
+
+.nav-center-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.nav-center-plus-icon {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Hover and Active Micro-interactions */
+.nav-center-btn:hover {
+  transform: translateY(-3px) scale(1.08);
+  box-shadow: 0 12px 28px rgba(79, 70, 229, 0.55), 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.nav-center-btn:hover .nav-center-plus-icon {
+  transform: rotate(90deg);
+}
+
+.nav-center-btn:active {
+  transform: translateY(1px) scale(0.92);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+}
+
+.nav-center-btn:active .nav-center-plus-icon {
+  transform: rotate(180deg) scale(0.9);
 }
 
 /* Modals & Action Sheets */
@@ -2753,17 +2818,20 @@ button, input, textarea, select {
   }
 
   .nav-item {
-    padding: 4px 10px;
+    padding: 4px 8px;
     font-size: 0.68rem;
     gap: 2px;
   }
 
-  /* Floating Action Button */
-  .fab-add {
-    bottom: calc(72px + var(--sab));
-    right: calc(max(14px, var(--sar)));
-    width: 50px;
-    height: 50px;
+  /* Center FAB on Mobile */
+  .nav-center-wrapper {
+    width: 52px;
+  }
+
+  .nav-center-btn {
+    top: -16px;
+    width: 48px;
+    height: 48px;
   }
 
   /* Modal Sheets */

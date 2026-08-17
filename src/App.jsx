@@ -354,19 +354,12 @@ export default function App() {
         )}
       </main>
 
-      {/* Floating Action Button (Add Note) */}
-      {activeTab === 'notes' && (
-        <button
-          className="fab-add"
-          onClick={handleOpenAddModal}
-          title="Thêm ghi chú mới"
-        >
-          <Plus size={26} strokeWidth={2.5} />
-        </button>
-      )}
-
-      {/* Bottom Navigation */}
-      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+      {/* Bottom Navigation with Center Elevated FAB */}
+      <BottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenAddModal={handleOpenAddModal}
+      />
 
       {/* Add / Edit Note Modal */}
       <AddNoteModal
