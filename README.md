@@ -1,11 +1,11 @@
 # 📘 EZLanguage — Personal Smart English Notebook & Flashcard Companion
 
 <p align="center">
-  <img src="public/icons/icon-192.png" width="96" height="96" alt="EZLanguage Logo" style="border-radius: 22px; box-shadow: 0 10px 25px rgba(79, 70, 229, 0.25);" />
+  <img src="public/favicon.svg" width="96" height="96" alt="EZLanguage Logo" />
 </p>
 
 <p align="center">
-  <strong>A premium, offline-first Progressive Web App (PWA) tailored specifically for personal English vocabulary curation, active recall, and spaced learning on iOS and modern browsers.</strong>
+  <strong>A premium, offline-first Progressive Web App (PWA) tailored specifically for personal English vocabulary curation, active recall, and spaced learning on iOS and modern web browsers.</strong>
 </p>
 
 <p align="center">
@@ -21,61 +21,61 @@
 
 ## 🎯 About The Project
 
-**EZLanguage** is a bespoke, **personal-use language learning tool** built to eliminate the noise and friction of generic dictionary apps. It acts as an intelligent digital pocket notebook where I curate, organize, and practice English vocabulary, phrasal verbs, idioms, collocations, grammar patterns, and common mistakes.
+**EZLanguage** is a bespoke, **personal-use language learning application** built to eliminate the clutter and friction of generic dictionary platforms. It serves as an intelligent digital pocket notebook to curate, organize, and master English vocabulary, phrasal verbs, idioms, collocations, grammar sentence patterns, and common language mistakes.
 
-Crafted with a **Local-First, Cloud-Synced** philosophy, it delivers a lightning-fast native app experience on iPhone (PWA Standalone) with real-time cloud backup, audio pronunciation, multi-engine lookup, and 3D flashcards.
+Engineered with a **Local-First, Cloud-Synced** architecture, it provides an ultra-responsive native app feel on mobile devices (PWA Standalone) with real-time cloud persistence, native audio pronunciation, multi-source definitions, and 3D flashcard reviews.
 
 ---
 
 ## ✨ Core Features
 
-### 🔍 1. Multi-Engine Quick Lookup (Tra Nhanh Đa Luồng)
-- **Parallel Querying**: Simultaneously leverages Google Translate GTX, Free Dictionary (Oxford API), and Datamuse.
-- **100% Coverage**: Look up single words, complex phrasal verbs, idioms, or full sentences.
-- **Auto-Population**: Fetches accurate Vietnamese translations, phonetic IPA, native audio pronunciation (MP3 / SpeechSynthesis fallback), English definitions, and contextual examples with 1 click.
+### 🔍 1. Multi-Engine Quick Lookup
+- **Parallel Querying**: Simultaneously taps into Google Translate Engine, Free Dictionary (Oxford API), and Datamuse.
+- **Comprehensive Coverage**: Effortlessly look up single words, multi-word phrasal verbs, idiomatic phrases, or complex sentences.
+- **One-Click Auto-Fill**: Automatically retrieves accurate translations, phonetic IPA, native audio pronunciation, detailed definitions, contextual examples, and synonyms.
 
-### 📂 2. Structured Folder Hubs & Concept Guide
-- Categorize notes into 5 dedicated knowledge hubs:
-  - 📖 **Vocabulary** (Single words)
+### 📂 2. Structured Knowledge Hubs & Concept Guide
+- Organize notes into 5 dedicated categories:
+  - 📖 **Vocabulary** (Single words & terms)
   - 🧩 **Phrasal Verb** (Verb + Particle combinations)
   - 🌟 **Collocation & Idiom** (Natural word pairings and figurative expressions)
   - 💬 **Sentence Pattern** (Grammar structures and conversational templates)
-  - 💡 **Mistake & Tip** (Common pitfalls, confusing pairs, and pro tips)
-- **Interactive Concept Explainer `(i)`**: Modal providing definitions, formulas, real-world examples, and memory tricks for each category.
-- **Today's Notes Hero**: Highlights cards created today using local timezone precision.
+  - 💡 **Mistake & Tip** (Common pitfalls, confusing pairs, and memory tips)
+- **Interactive Concept Explainer `(i)`**: An educational modal providing formal concepts, structural patterns, curated examples, and memory tricks for each category.
+- **Today's Notes Hub**: Automatically aggregates and spotlights notes recorded during the current calendar day using local timezone detection.
 
 ### 🔤 3. 4-Way Sorting & Alphabetical Jump Bar
-- Seamless sorting via 4 quick chips: **Newest**, **Oldest**, **A → Z**, and **Z → A**.
-- Grouped alphabetical view with a vertical **Alphabet Jump Bar** for rapid scrubbing.
+- Flexible sorting with 4 quick filters: **Newest**, **Oldest**, **A → Z**, and **Z → A**.
+- Grouped alphabetical view with an intuitive vertical **Alphabet Jump Bar** for rapid navigation across extensive collections.
 
 ### 🃏 4. 3D Active Recall Flashcards
-- Dedicated study decks for **All Notes**, **Starred Notes**, **Needs Review**, and each category folder.
-- Smooth 3D card flip animation with interactive mastery evaluation (*"Remembered"* vs *"Forgot"*).
-- Instant review stats, percentage accuracy, and gamified **confetti celebration bursts**.
+- Dedicated study decks for **All Cards**, **Starred Items**, **Needs Review**, and each category folder.
+- Fluid 3D card flip animation with interactive self-assessment (*"Remembered"* vs *"Forgot"*).
+- Post-session statistics, accuracy scores, and reward celebration bursts.
 
 ### 📜 5. Card Timestamps & Activity Timeline
-- Detailed creation timestamp on every note card (`Added: HH:mm, DD/MM/YYYY`).
-- Interactive **History Modal** logging total reviews, mastery level, star toggles, and edit events.
+- Precision timestamp recorded for every note card (`Added: HH:mm, DD/MM/YYYY`).
+- Interactive **History Modal** displaying total study sessions, current mastery status, star markings, and modification logs.
 
 ### 🔒 6. Real-Time Cloud Sync & Email Verification
-- Google OAuth and Email/Password authentication powered by **Firebase**.
-- **Security-First Email Verification**: Frosted glass verification screen with one-tap copy, 60s cooldown timer, live signal reload, and full spam protection.
-- Instant, multi-device **Firestore sync** with offline fallback.
+- Google OAuth and secure Email/Password authentication powered by **Firebase**.
+- **Security-First Email Verification**: Frosted glass verification screen with one-tap copy, 60-second cooldown protection, live signal verification, and anti-spam measures.
+- Seamless multi-device **Cloud Firestore sync** with local offline persistence.
 
 ### 📱 7. Apple-Grade iOS PWA Optimization
-- **Pixel-Perfect for iPhone 14/15**: Optimized for 390px logical viewport and Safe Area Insets (Notch & Home Bar).
-- **Anti-Zoom Lock**: Inputs strictly sized at 16px to eliminate unwanted Safari viewport shifting.
-- **Center Elevated Action Button (FAB)**: Floating dock center `+` button with breathing aura pulse and 180° rotational micro-interaction.
-- **Strict Vector SVG Standard**: 100% vector icons powered by Lucide React and `Be Vietnam Pro` Vietnamese diacritics typography.
+- **Pixel-Perfect for iPhone**: Tailored for the 390px logical viewport and Safe Area Insets (Notch & Home Bar).
+- **Anti-Zoom Input Lock**: Form fields strictly calibrated to 16px to prevent unwanted Safari viewport zooming.
+- **Elevated Center Action Button (FAB)**: Floating dock center `+` button with breathing aura glow and interactive 180° rotation on tap.
+- **Strict Vector SVG Standard**: 100% crisp vector icons rendered with Lucide React.
 
 ---
 
 ## 🛠️ Technology Stack
 
-| Layer | Technology |
+| Component | Technology |
 | :--- | :--- |
 | **Frontend Framework** | [React 18](https://react.dev/) + [Vite 6](https://vitejs.dev/) |
-| **Styling & Design System** | Vanilla CSS (Pastel Light / Frosted Glassmorphism / Mobile-First) |
+| **Styling & Design System** | Vanilla CSS (Pastel Light / Glassmorphism / Mobile-First) |
 | **Authentication & Database** | [Google Firebase](https://firebase.google.com/) (Auth + Cloud Firestore) |
 | **Icons & Visuals** | [Lucide React](https://lucide.dev/) (Strict Vector SVGs) |
 | **Effects & Celebrations** | [Canvas Confetti](https://github.com/catdad/canvas-confetti) |
@@ -108,7 +108,7 @@ Crafted with a **Local-First, Cloud-Synced** philosophy, it delivers a lightning
    npm run dev -- --host
    ```
    - Local: `http://localhost:5173`
-   - Mobile (Same Wi-Fi network): `http://<YOUR_LOCAL_IP>:5173`
+   - Mobile (Same Local Network): `http://<YOUR_LOCAL_IP>:5173`
 
 4. **Build for production**:
    ```bash
@@ -119,20 +119,20 @@ Crafted with a **Local-First, Cloud-Synced** philosophy, it delivers a lightning
 
 ## 📲 Installing as an iOS App (PWA)
 
-1. Open **Safari** on your iPhone and navigate to your deployed URL.
-2. Tap the **Share** button (the square with an upward arrow) at the bottom toolbar.
-3. Scroll down and tap **Add to Home Screen** (*Thêm vào MH chính*).
-4. Tap **Add**. The app will now launch full-screen without Safari browser address bars!
+1. Open **Safari** on your iPhone and visit your deployed application URL.
+2. Tap the **Share** button (the square with an arrow pointing upward) in the bottom bar.
+3. Scroll down and select **Add to Home Screen**.
+4. Tap **Add**. The app will now launch full-screen directly from your home screen.
 
 ---
 
 ## 👤 Author
 
 * **Cao Phan** ([@cpgod36](https://github.com/cpgod36))
-* *Personal Project — Built with care for daily English mastery.*
+* *Personal Project — Designed and maintained for personal English mastery.*
 
 ---
 
 <p align="center">
-  <sub>Made with ❤️ for personal productivity and continuous learning.</sub>
+  <sub>Built with ❤️ for personal productivity and continuous lifelong learning.</sub>
 </p>
