@@ -1,3 +1,5 @@
+import { findAcademicWordFamily } from './academicWordFamilies';
+
 /**
  * Multi-Engine Dictionary & Translation API for EZLanguage
  * Combines Free Dictionary API + Google GTX Engine + Datamuse
@@ -60,11 +62,17 @@ async function fetchDatamuse(word) {
   }
 }
 
-// 4. Fetch Word Family & Transformations from Datamuse + Morphological analysis
+// 4. Fetch Word Family & Transformations (Curated Academic Lexicon + Multi-Derivative Datamuse)
 async function fetchWordFamily(rawWord) {
   const word = rawWord.trim().toLowerCase();
   if (word.includes(' ') || word.length < 3) {
     return { verb: '', noun: '', adjective: '', adverb: '', opposite: '' };
+  }
+
+  // Tier 1: Check High-Yield Curated Academic Word Family Lexicon (Instant 100% Accuracy)
+  const curated = findAcademicWordFamily(word);
+  if (curated) {
+    return { ...curated };
   }
 
   const result = { verb: '', noun: '', adjective: '', adverb: '', opposite: '' };
@@ -83,56 +91,65 @@ async function fetchWordFamily(rawWord) {
 
     // Parallel query for derivatives and antonyms
     const [familyRes, antonymRes] = await Promise.allSettled([
-      fetchWithTimeout(`https://api.datamuse.com/words?sp=${encodeURIComponent(stem)}*&md=p&max=25`, {}, 3000),
-      fetchWithTimeout(`https://api.datamuse.com/words?rel_ant=${encodeURIComponent(word)}&max=3`, {}, 2500)
+      fetchWithTimeout(`https://api.datamuse.com/words?sp=${encodeURIComponent(stem)}*&md=p&max=40`, {}, 3000),
+      fetchWithTimeout(`https://api.datamuse.com/words?rel_ant=${encodeURIComponent(word)}&max=4`, {}, 2500)
     ]);
 
     const familyData = familyRes.status === 'fulfilled' && familyRes.value.ok ? await familyRes.value.json() : [];
     const antonymData = antonymRes.status === 'fulfilled' && antonymRes.value.ok ? await antonymRes.value.json() : [];
 
-    // Process antonyms
+    const oppWords = [];
     if (Array.isArray(antonymData) && antonymData.length > 0) {
-      result.opposite = antonymData.map(a => a.word).slice(0, 2).join(', ');
+      antonymData.forEach(a => {
+        if (a.word && !oppWords.includes(a.word)) oppWords.push(a.word);
+      });
     }
 
-    // Process word family by tags
+    // Process multi-derivatives
     if (Array.isArray(familyData)) {
       const verbs = [];
       const nouns = [];
       const adjectives = [];
       const adverbs = [];
 
+      const isBaseInflection = (candidate, list) => {
+        return list.some(existing => (
+          candidate === existing + 's' ||
+          candidate === existing + 'es' ||
+          candidate === existing + 'ed' ||
+          candidate === existing + 'ing'
+        ));
+      };
+
       familyData.forEach(item => {
         const w = item.word;
-        if (!w || w.includes(' ') || w.length < 3) return;
+        if (!w || w.includes(' ') || w.length < 3 || w.includes('-')) return;
         const tags = item.tags || [];
 
-        if (tags.includes('v') && !verbs.includes(w)) verbs.push(w);
-        if (tags.includes('n') && !nouns.includes(w)) nouns.push(w);
-        if (tags.includes('adj') && !adjectives.includes(w)) adjectives.push(w);
-        if (tags.includes('adv') && !adverbs.includes(w)) adverbs.push(w);
+        if (tags.includes('v') && !verbs.includes(w) && !isBaseInflection(w, verbs) && verbs.length < 3) {
+          verbs.push(w);
+        }
+        if (tags.includes('n') && !nouns.includes(w) && !isBaseInflection(w, nouns) && nouns.length < 4) {
+          nouns.push(w);
+        }
+        if (tags.includes('adj') && !adjectives.includes(w) && !isBaseInflection(w, adjectives) && adjectives.length < 3) {
+          adjectives.push(w);
+        }
+        if (tags.includes('adv') && !adverbs.includes(w) && !isBaseInflection(w, adverbs) && adverbs.length < 2) {
+          adverbs.push(w);
+        }
       });
 
-      const topVerb = verbs[0] || (word.endsWith('ed') || word.endsWith('ing') ? stem : '');
-      const topNoun = nouns[0] || '';
-      const topAdj = adjectives[0] || '';
-      const topAdv = adverbs[0] || '';
-      const topOpp = result.opposite ? result.opposite.split(',')[0].trim() : '';
+      // Collect all gathered derivatives for single-batch translation
+      const allGathered = Array.from(new Set([...verbs, ...nouns, ...adjectives, ...adverbs, ...oppWords]));
 
-      // Prepare list of words to translate into Vietnamese in a single quick call
-      const wordsToTranslate = [];
-      if (topVerb) wordsToTranslate.push(topVerb);
-      if (topNoun) wordsToTranslate.push(topNoun);
-      if (topAdj) wordsToTranslate.push(topAdj);
-      if (topAdv) wordsToTranslate.push(topAdv);
-      if (topOpp) wordsToTranslate.push(topOpp);
-
-      if (wordsToTranslate.length > 0) {
+      if (allGathered.length > 0) {
         try {
-          const batchText = wordsToTranslate.join(' \n ');
+          const batchText = allGathered.join(' \n ');
           const transRes = await fetchGoogleGTX(batchText);
+          const transMap = {};
+
           if (transRes && transRes[0] && Array.isArray(transRes[0])) {
-            const transMap = {};
             transRes[0].forEach(item => {
               if (item && item[0] && item[1]) {
                 const en = item[1].trim().toLowerCase();
@@ -142,32 +159,26 @@ async function fetchWordFamily(rawWord) {
                 }
               }
             });
-
-            const formatWithVi = (enWord) => {
-              if (!enWord) return '';
-              const vi = transMap[enWord.toLowerCase()];
-              return vi ? `${enWord} (${vi})` : enWord;
-            };
-
-            if (topVerb) result.verb = formatWithVi(topVerb);
-            if (topNoun) result.noun = formatWithVi(topNoun);
-            if (topAdj) result.adjective = formatWithVi(topAdj);
-            if (topAdv) result.adverb = formatWithVi(topAdv);
-            if (topOpp) result.opposite = formatWithVi(topOpp);
-          } else {
-            // Fallback without translation
-            if (topVerb) result.verb = topVerb;
-            if (topNoun) result.noun = topNoun;
-            if (topAdj) result.adjective = topAdj;
-            if (topAdv) result.adverb = topAdv;
-            if (topOpp) result.opposite = topOpp;
           }
+
+          const formatGroup = (wordList) => {
+            return wordList.map(w => {
+              const vi = transMap[w.toLowerCase()];
+              return vi ? `${w} (${vi})` : w;
+            }).join(', ');
+          };
+
+          if (verbs.length > 0) result.verb = formatGroup(verbs);
+          if (nouns.length > 0) result.noun = formatGroup(nouns);
+          if (adjectives.length > 0) result.adjective = formatGroup(adjectives);
+          if (adverbs.length > 0) result.adverb = formatGroup(adverbs);
+          if (oppWords.length > 0) result.opposite = formatGroup(oppWords);
         } catch (tErr) {
-          if (topVerb) result.verb = topVerb;
-          if (topNoun) result.noun = topNoun;
-          if (topAdj) result.adjective = topAdj;
-          if (topAdv) result.adverb = topAdv;
-          if (topOpp) result.opposite = topOpp;
+          if (verbs.length > 0) result.verb = verbs.join(', ');
+          if (nouns.length > 0) result.noun = nouns.join(', ');
+          if (adjectives.length > 0) result.adjective = adjectives.join(', ');
+          if (adverbs.length > 0) result.adverb = adverbs.join(', ');
+          if (oppWords.length > 0) result.opposite = oppWords.join(', ');
         }
       }
     }

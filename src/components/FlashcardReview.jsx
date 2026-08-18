@@ -5,7 +5,7 @@ import {
   Layers, Calendar, Flame, Sparkles, ArrowLeft, ArrowRight,
   BookOpen, MessageSquareText, AlertCircle, Play, ChevronRight, BarChart2, GitFork
 } from 'lucide-react';
-import { NOTE_TYPES, isToday } from '../utils/storage';
+import { NOTE_TYPES, isToday, parseWordFamilyEntries } from '../utils/storage';
 import { playPronunciation } from '../utils/speech';
 
 export default function FlashcardReview({
@@ -519,16 +519,12 @@ export default function FlashcardReview({
                           { pos: 'Opp', text: currentCard.wordFamily.opposite, cls: 'chip-opp' }
                         ].map(({ pos, text, cls }) => {
                           if (!text || !text.trim()) return null;
-                          const parts = text.split(',').map(p => p.trim()).filter(Boolean);
+                          const entries = parseWordFamilyEntries(text);
 
-                          return parts.map((part, pIdx) => {
-                            const match = part.match(/^([^(]+)(?:\(([^)]+)\))?$/);
-                            const enWord = match ? match[1].trim() : part.trim();
-                            const viMeaning = match && match[2] ? match[2].trim() : '';
-
+                          return entries.map(({ enWord, viMeaning }, pIdx) => {
                             return (
                               <button
-                                key={`${pos}_${pIdx}`}
+                                key={`${pos}_${pIdx}_${enWord}`}
                                 type="button"
                                 className={`family-chip ${cls}`}
                                 onClick={(e) => {

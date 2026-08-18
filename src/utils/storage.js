@@ -351,6 +351,41 @@ export function formatDateTime(isoString) {
   }
 }
 
+/**
+ * Smart Word Family Parser
+ * Splits items by comma OUTSIDE parentheses so meanings with commas like "(sự sản xuất, sản lượng)" are preserved safely!
+ */
+export function parseWordFamilyEntries(rawText) {
+  if (!rawText || !rawText.trim()) return [];
+
+  const entries = [];
+  let current = '';
+  let insideParen = 0;
+
+  for (let i = 0; i < rawText.length; i++) {
+    const char = rawText[i];
+    if (char === '(') insideParen++;
+    else if (char === ')') insideParen = Math.max(0, insideParen - 1);
+
+    if (char === ',' && insideParen === 0) {
+      if (current.trim()) entries.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) entries.push(current.trim());
+
+  return entries.map(item => {
+    const match = item.match(/^([^(]+)(?:\(([^)]+)\))?$/);
+    if (!match) return { enWord: item.trim(), viMeaning: '' };
+    return {
+      enWord: match[1].trim(),
+      viMeaning: match[2] ? match[2].trim() : ''
+    };
+  }).filter(e => e.enWord.length > 0);
+}
+
 export function findExistingNoteByTerm(term, notes) {
   if (!term || !term.trim()) return null;
   const clean = term.trim().toLowerCase();
@@ -390,18 +425,15 @@ export function checkDuplicateTerm(term, notes, currentNoteId = null) {
 
       for (const entry of posEntries) {
         if (!entry.text) continue;
-        const words = entry.text.split(',').map(w => {
-          const match = w.match(/^([^(]+)/);
-          return (match ? match[1] : w).trim().toLowerCase();
-        });
+        const parsed = parseWordFamilyEntries(entry.text);
 
-        for (const w of words) {
-          if (w === clean) {
+        for (const item of parsed) {
+          if (item.enWord.toLowerCase() === clean) {
             return {
               note: n,
               matchType: 'word_family',
               matchedTerm: n.term,
-              matchedWord: w,
+              matchedWord: item.enWord,
               matchedPos: entry.pos
             };
           }

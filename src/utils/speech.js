@@ -4,6 +4,11 @@
 let currentAudio = null;
 
 export function playPronunciation(text, audioUrl = null, options = {}) {
+  if (!text && !audioUrl) return;
+
+  // Clean English text by removing parenthesized translations or annotations
+  const cleanEnglish = text ? text.replace(/\([^)]*\)/g, '').replace(/\[[^\]]*\]/g, '').trim() : '';
+
   // If there is an external audio URL from dictionary API, try playing that first
   if (audioUrl) {
     try {
@@ -14,7 +19,7 @@ export function playPronunciation(text, audioUrl = null, options = {}) {
       currentAudio = new Audio(audioUrl);
       currentAudio.play().catch(e => {
         console.warn('Audio URL playback failed, falling back to Web Speech:', e);
-        speakWithBrowser(text, options);
+        speakWithBrowser(cleanEnglish, options);
       });
       return;
     } catch (e) {
@@ -22,7 +27,7 @@ export function playPronunciation(text, audioUrl = null, options = {}) {
     }
   }
 
-  speakWithBrowser(text, options);
+  speakWithBrowser(cleanEnglish, options);
 }
 
 function speakWithBrowser(text, options = {}) {
