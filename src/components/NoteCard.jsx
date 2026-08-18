@@ -2,7 +2,7 @@ import React, { useState, memo } from 'react';
 import {
   Volume2, Star, MoreVertical, Edit2, Trash2, PlusCircle,
   Sparkles, Lightbulb, CheckCircle2, Clock, History, Calendar,
-  Trophy, RotateCw, X, ChevronRight, Check
+  Trophy, RotateCw, X, ChevronRight, Check, GitFork
 } from 'lucide-react';
 import { NOTE_TYPES, formatDateTime } from '../utils/storage';
 import { playPronunciation } from '../utils/speech';
@@ -254,6 +254,54 @@ function NoteCard({
             </div>
           ))}
         </div>
+
+        {/* Word Family (Họ từ vựng / Transformations) */}
+        {note.wordFamily && (note.wordFamily.verb || note.wordFamily.noun || note.wordFamily.adjective || note.wordFamily.adverb || note.wordFamily.opposite) && (
+          <div className="word-family-card-box">
+            <div className="word-family-header">
+              <GitFork size={13} color="#4F46E5" />
+              <span>Họ từ vựng (Word Family)</span>
+            </div>
+            <div className="word-family-chips-wrapper">
+              {[
+                { pos: 'V', text: note.wordFamily.verb, cls: 'chip-v' },
+                { pos: 'N', text: note.wordFamily.noun, cls: 'chip-n' },
+                { pos: 'Adj', text: note.wordFamily.adjective, cls: 'chip-adj' },
+                { pos: 'Adv', text: note.wordFamily.adverb, cls: 'chip-adv' },
+                { pos: 'Opp', text: note.wordFamily.opposite, cls: 'chip-opp' }
+              ].map(({ pos, text, cls }) => {
+                if (!text || !text.trim()) return null;
+
+                // Parse entries separated by comma or single entry
+                const parts = text.split(',').map(p => p.trim()).filter(Boolean);
+
+                return parts.map((part, pIdx) => {
+                  const match = part.match(/^([^(]+)(?:\(([^)]+)\))?$/);
+                  const enWord = match ? match[1].trim() : part.trim();
+                  const viMeaning = match && match[2] ? match[2].trim() : '';
+
+                  return (
+                    <button
+                      key={`${pos}_${pIdx}`}
+                      type="button"
+                      className={`family-chip ${cls}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playPronunciation(enWord);
+                      }}
+                      title={`Phát âm: ${enWord}${viMeaning ? ' (' + viMeaning + ')' : ''}`}
+                    >
+                      <span className="chip-pos">{pos}</span>
+                      <span className="chip-word">{enWord}</span>
+                      {viMeaning && <span className="chip-meaning">({viMeaning})</span>}
+                      <Volume2 size={11} className="chip-speaker" />
+                    </button>
+                  );
+                });
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Extras: Collocations, Mnemonic & Tags */}
         {(note.collocations || note.mnemonic || (note.tags && note.tags.length > 0)) && (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, Plus, Trash2, Loader2, AlertTriangle, Check, BookOpen, Volume2, Eye } from 'lucide-react';
-import { NOTE_TYPES, findExistingNoteByTerm } from '../utils/storage';
+import { X, Sparkles, Plus, Trash2, Loader2, AlertTriangle, Check, BookOpen, Volume2, Eye, GitFork } from 'lucide-react';
+import { NOTE_TYPES, checkDuplicateTerm } from '../utils/storage';
 import { lookupWord } from '../utils/dictionaryApi';
 import { playPronunciation } from '../utils/speech';
 
@@ -25,6 +25,13 @@ export default function AddNoteModal({
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
   const [isStarred, setIsStarred] = useState(false);
+  const [wordFamily, setWordFamily] = useState({
+    verb: '',
+    noun: '',
+    adjective: '',
+    adverb: '',
+    opposite: ''
+  });
 
   // Dictionary Lookup & Duplicate States
   const [isLookingUp, setIsLookingUp] = useState(false);
@@ -44,6 +51,9 @@ export default function AddNoteModal({
           ? editNote.meanings
           : [{ partOfSpeech: 'noun', vietnamese: '', englishDef: '', example: '' }]
       );
+      setWordFamily(
+        editNote.wordFamily || { verb: '', noun: '', adjective: '', adverb: '', opposite: '' }
+      );
       setCollocations(editNote.collocations || '');
       setMnemonic(editNote.mnemonic || '');
       setTags(editNote.tags || []);
@@ -57,6 +67,7 @@ export default function AddNoteModal({
       setIpa('');
       setAudioUrl('');
       setMeanings([{ partOfSpeech: 'noun', vietnamese: '', englishDef: '', example: '' }]);
+      setWordFamily({ verb: '', noun: '', adjective: '', adverb: '', opposite: '' });
       setCollocations('');
       setMnemonic('');
       setTags([]);
@@ -67,13 +78,13 @@ export default function AddNoteModal({
     setLookupMessage(null);
   }, [editNote, isOpen]);
 
-  // Check duplicates while typing term
+  // Check duplicates while typing term (both exact matches and cross Word Family matches)
   const handleTermChange = (value) => {
     setTerm(value);
     if (!editNote && !ignoreDuplicate && value.trim().length > 1) {
-      const existing = findExistingNoteByTerm(value, allNotes);
-      if (existing) {
-        setDuplicateWarning(existing);
+      const match = checkDuplicateTerm(value, allNotes);
+      if (match) {
+        setDuplicateWarning(match);
       } else {
         setDuplicateWarning(null);
       }
@@ -105,11 +116,23 @@ export default function AddNoteModal({
         example,
         synonyms,
         suggestedType,
-        additionalMeanings
+        additionalMeanings,
+        wordFamily: autoFamily
       } = result.data;
 
       if (newIpa) setIpa(newIpa);
       if (newAudio) setAudioUrl(newAudio);
+
+      // Auto-populate Word Family if found
+      if (autoFamily) {
+        setWordFamily(prev => ({
+          verb: autoFamily.verb || prev.verb || '',
+          noun: autoFamily.noun || prev.noun || '',
+          adjective: autoFamily.adjective || prev.adjective || '',
+          adverb: autoFamily.adverb || prev.adverb || '',
+          opposite: autoFamily.opposite || prev.opposite || ''
+        }));
+      }
 
       // Auto-switch type if user is currently on default 'word' and a phrasal verb / idiom is detected
       if (type === 'word' && suggestedType && suggestedType !== 'word') {
@@ -144,7 +167,7 @@ export default function AddNoteModal({
 
       setLookupMessage({
         type: 'success',
-        text: 'Đã tự động điền nghĩa tiếng Việt, phát âm IPA và định nghĩa!'
+        text: 'Đã tự động điền nghĩa tiếng Việt, phát âm IPA, định nghĩa và họ từ!'
       });
 
       // Play pronunciation preview
@@ -178,6 +201,11 @@ export default function AddNoteModal({
     setMeanings((prev) => prev.filter((_, idx) => idx !== index));
   };
 
+  // Word Family field handler
+  const handleWordFamilyChange = (field, value) => {
+    setWordFamily(prev => ({ ...prev, [field]: value }));
+  };
+
   // Tags Handler
   const handleAddTag = (tagToAdd) => {
     const clean = tagToAdd.replace('#', '').trim();
@@ -204,6 +232,14 @@ export default function AddNoteModal({
       return;
     }
 
+    const cleanWordFamily = {
+      verb: (wordFamily.verb || '').trim(),
+      noun: (wordFamily.noun || '').trim(),
+      adjective: (wordFamily.adjective || '').trim(),
+      adverb: (wordFamily.adverb || '').trim(),
+      opposite: (wordFamily.opposite || '').trim()
+    };
+
     const notePayload = {
       ...(editNote || {}),
       term: term.trim(),
@@ -211,6 +247,7 @@ export default function AddNoteModal({
       ipa: ipa.trim(),
       audioUrl,
       meanings: validMeanings,
+      wordFamily: cleanWordFamily,
       collocations: collocations.trim(),
       mnemonic: mnemonic.trim(),
       tags,
@@ -288,26 +325,36 @@ export default function AddNoteModal({
             </div>
           </div>
 
-          {/* Duplicate Alert Banner if word already exists */}
+          {/* Duplicate Alert Banner if word already exists or is in Word Family */}
           {duplicateWarning && !editNote && (
-            <div className="duplicate-alert-box">
+            <div className={`duplicate-alert-box ${duplicateWarning.matchType === 'word_family' ? 'cross-family-alert' : ''}`}>
               <div className="duplicate-alert-header">
-                <AlertTriangle size={18} color="#D97706" />
-                <span>Từ "{duplicateWarning.term}" đã có trong sổ tay của bạn!</span>
+                {duplicateWarning.matchType === 'word_family' ? (
+                  <>
+                    <GitFork size={18} color="#4F46E5" />
+                    <span>"{term}" đã có trong Họ từ ({duplicateWarning.matchedPos}) của thẻ "{duplicateWarning.note.term}"!</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle size={18} color="#D97706" />
+                    <span>Từ "{duplicateWarning.note.term}" đã có trong sổ tay của bạn!</span>
+                  </>
+                )}
               </div>
-              <div style={{ fontSize: '0.82rem', color: '#78350F' }}>
-                Đã lưu {duplicateWarning.meanings?.length || 1} nét nghĩa: <strong>{duplicateWarning.meanings?.[0]?.vietnamese}</strong>
+
+              <div style={{ fontSize: '0.82rem', color: duplicateWarning.matchType === 'word_family' ? '#3730A3' : '#78350F' }}>
+                Nghĩa thẻ gốc: <strong>{duplicateWarning.note.meanings?.[0]?.vietnamese}</strong>
               </div>
+
               <div className="duplicate-options-grid">
                 <button
                   type="button"
                   className="btn-duplicate-action"
                   onClick={() => {
-                    // Switch to edit existing note
-                    onSwitchToEditNote(duplicateWarning);
+                    onSwitchToEditNote(duplicateWarning.note);
                   }}
                 >
-                  <Eye size={15} /> Mở thẻ cũ để sửa
+                  <Eye size={15} /> {duplicateWarning.matchType === 'word_family' ? `Mở thẻ gốc "${duplicateWarning.note.term}"` : 'Mở thẻ cũ để sửa'}
                 </button>
                 <button
                   type="button"
@@ -317,7 +364,7 @@ export default function AddNoteModal({
                     setDuplicateWarning(null);
                   }}
                 >
-                  <Plus size={15} /> Vẫn tạo thẻ mới
+                  <Plus size={15} /> Vẫn tạo thẻ riêng
                 </button>
               </div>
             </div>
@@ -460,6 +507,81 @@ export default function AddNoteModal({
                 />
               </div>
             ))}
+          </div>
+
+          {/* Word Family (Họ từ vựng / Transformations) */}
+          <div className="form-group">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label className="form-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <GitFork size={15} color="#4F46E5" />
+                <span>Họ từ vựng (Word Family / Transformations)</span>
+              </label>
+              <span style={{ fontSize: '0.74rem', color: '#64748B', fontWeight: 600 }}>
+                Tự điền khi Tra nhanh
+              </span>
+            </div>
+
+            <div className="word-family-form-grid">
+              {/* Verb */}
+              <div className="family-form-item">
+                <span className="family-form-badge badge-v">Verb (Động từ)</span>
+                <input
+                  type="text"
+                  className="form-input family-input"
+                  placeholder="e.g. transform, create"
+                  value={wordFamily.verb}
+                  onChange={(e) => handleWordFamilyChange('verb', e.target.value)}
+                />
+              </div>
+
+              {/* Noun */}
+              <div className="family-form-item">
+                <span className="family-form-badge badge-n">Noun (Danh từ)</span>
+                <input
+                  type="text"
+                  className="form-input family-input"
+                  placeholder="e.g. transformation, creation"
+                  value={wordFamily.noun}
+                  onChange={(e) => handleWordFamilyChange('noun', e.target.value)}
+                />
+              </div>
+
+              {/* Adjective */}
+              <div className="family-form-item">
+                <span className="family-form-badge badge-adj">Adj (Tính từ)</span>
+                <input
+                  type="text"
+                  className="form-input family-input"
+                  placeholder="e.g. transformative, creative"
+                  value={wordFamily.adjective}
+                  onChange={(e) => handleWordFamilyChange('adjective', e.target.value)}
+                />
+              </div>
+
+              {/* Adverb */}
+              <div className="family-form-item">
+                <span className="family-form-badge badge-adv">Adv (Trạng từ)</span>
+                <input
+                  type="text"
+                  className="form-input family-input"
+                  placeholder="e.g. transformatively, creatively"
+                  value={wordFamily.adverb}
+                  onChange={(e) => handleWordFamilyChange('adverb', e.target.value)}
+                />
+              </div>
+
+              {/* Opposite / Antonym */}
+              <div className="family-form-item full-width">
+                <span className="family-form-badge badge-opp">Phủ định / Trái nghĩa</span>
+                <input
+                  type="text"
+                  className="form-input family-input"
+                  placeholder="e.g. untransformed, uncreative, fail"
+                  value={wordFamily.opposite}
+                  onChange={(e) => handleWordFamilyChange('opposite', e.target.value)}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Collocations */}

@@ -3,7 +3,7 @@ import confetti from 'canvas-confetti';
 import {
   Volume2, RotateCw, CheckCircle2, XCircle, Trophy, Star,
   Layers, Calendar, Flame, Sparkles, ArrowLeft, ArrowRight,
-  BookOpen, MessageSquareText, AlertCircle, Play, ChevronRight, BarChart2
+  BookOpen, MessageSquareText, AlertCircle, Play, ChevronRight, BarChart2, GitFork
 } from 'lucide-react';
 import { NOTE_TYPES, isToday } from '../utils/storage';
 import { playPronunciation } from '../utils/speech';
@@ -25,6 +25,15 @@ export default function FlashcardReview({
     const todayNotes = notes.filter(n => isToday(n.createdAt));
     const unmasteredNotes = notes.filter(n => n.masteryLevel !== 'mastered');
     const starredNotes = notes.filter(n => n.isStarred);
+    const wordFamilyNotes = notes.filter(n =>
+      n.wordFamily && (
+        n.wordFamily.verb ||
+        n.wordFamily.noun ||
+        n.wordFamily.adjective ||
+        n.wordFamily.adverb ||
+        n.wordFamily.opposite
+      )
+    );
 
     // Goal & Scope Decks
     const featuredDecks = [
@@ -40,6 +49,20 @@ export default function FlashcardReview({
         filterFn: (n) => isToday(n.createdAt),
         count: todayNotes.length,
         masteredCount: todayNotes.filter(n => n.masteryLevel === 'mastered').length
+      },
+      {
+        id: 'word_formation',
+        title: 'Luyện Biến Đổi Họ Từ',
+        shortTitle: 'Word Formation',
+        description: 'Rèn phản xạ nhớ các dạng Noun, Verb, Adj, Adv của từ gốc',
+        icon: GitFork,
+        iconColor: '#6366F1',
+        iconBg: '#EEF2FF',
+        badgeClass: 'badge-sky',
+        tagText: 'Họ từ',
+        filterFn: (n) => n.wordFamily && (n.wordFamily.verb || n.wordFamily.noun || n.wordFamily.adjective || n.wordFamily.adverb || n.wordFamily.opposite),
+        count: wordFamilyNotes.length,
+        masteredCount: wordFamilyNotes.filter(n => n.masteryLevel === 'mastered').length
       },
       {
         id: 'unmastered',
@@ -428,10 +451,28 @@ export default function FlashcardReview({
                       </button>
                     </div>
                   )}
+
+                  {/* Special Word Formation Challenge Prompt on Front */}
+                  {selectedDeck?.id === 'word_formation' && (
+                    <div className="formation-challenge-box">
+                      <div className="formation-challenge-title">
+                        <GitFork size={13} color="#4F46E5" />
+                        <span>Thử thách biến đổi họ từ:</span>
+                      </div>
+                      <div className="formation-challenge-targets">
+                        {currentCard?.wordFamily?.verb && <span className="target-pill target-v">Verb ?</span>}
+                        {currentCard?.wordFamily?.noun && <span className="target-pill target-n">Noun ?</span>}
+                        {currentCard?.wordFamily?.adjective && <span className="target-pill target-adj">Adj ?</span>}
+                        {currentCard?.wordFamily?.adverb && <span className="target-pill target-adv">Adv ?</span>}
+                        {currentCard?.wordFamily?.opposite && <span className="target-pill target-opp">Opposite ?</span>}
+                      </div>
+                      <p className="formation-hint-text">Đọc nhẩm các dạng biến thể rồi chạm để kiểm tra đáp án!</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="card-flip-hint">
-                  <RotateCw size={14} /> Chạm vào thẻ để xem nghĩa
+                  <RotateCw size={14} /> Chạm vào thẻ để xem đáp án
                 </div>
               </div>
 
@@ -461,6 +502,52 @@ export default function FlashcardReview({
                       )}
                     </div>
                   ))}
+
+                  {/* Word Family on Card Back */}
+                  {currentCard?.wordFamily && (currentCard.wordFamily.verb || currentCard.wordFamily.noun || currentCard.wordFamily.adjective || currentCard.wordFamily.adverb || currentCard.wordFamily.opposite) && (
+                    <div className="flashcard-word-family">
+                      <div className="word-family-header" style={{ marginBottom: 4 }}>
+                        <GitFork size={13} color="#4F46E5" />
+                        <span>Họ từ vựng (Word Family)</span>
+                      </div>
+                      <div className="word-family-chips-wrapper">
+                        {[
+                          { pos: 'V', text: currentCard.wordFamily.verb, cls: 'chip-v' },
+                          { pos: 'N', text: currentCard.wordFamily.noun, cls: 'chip-n' },
+                          { pos: 'Adj', text: currentCard.wordFamily.adjective, cls: 'chip-adj' },
+                          { pos: 'Adv', text: currentCard.wordFamily.adverb, cls: 'chip-adv' },
+                          { pos: 'Opp', text: currentCard.wordFamily.opposite, cls: 'chip-opp' }
+                        ].map(({ pos, text, cls }) => {
+                          if (!text || !text.trim()) return null;
+                          const parts = text.split(',').map(p => p.trim()).filter(Boolean);
+
+                          return parts.map((part, pIdx) => {
+                            const match = part.match(/^([^(]+)(?:\(([^)]+)\))?$/);
+                            const enWord = match ? match[1].trim() : part.trim();
+                            const viMeaning = match && match[2] ? match[2].trim() : '';
+
+                            return (
+                              <button
+                                key={`${pos}_${pIdx}`}
+                                type="button"
+                                className={`family-chip ${cls}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  playPronunciation(enWord);
+                                }}
+                                title={`Phát âm: ${enWord}${viMeaning ? ' (' + viMeaning + ')' : ''}`}
+                              >
+                                <span className="chip-pos">{pos}</span>
+                                <span className="chip-word">{enWord}</span>
+                                {viMeaning && <span className="chip-meaning">({viMeaning})</span>}
+                                <Volume2 size={11} className="chip-speaker" />
+                              </button>
+                            );
+                          });
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {currentCard?.collocations && (
                     <div className="back-extra-note">

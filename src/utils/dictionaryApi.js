@@ -46,7 +46,7 @@ async function fetchGoogleGTX(word) {
   }
 }
 
-// 3. Fetch from Datamuse (Fallback for definitions and synonyms)
+// 3. Fetch from Datamuse (Fallback for definitions, synonyms, and word families)
 async function fetchDatamuse(word) {
   try {
     const clean = encodeURIComponent(word.trim().toLowerCase());
@@ -57,6 +57,124 @@ async function fetchDatamuse(word) {
     return data;
   } catch (e) {
     return null;
+  }
+}
+
+// 4. Fetch Word Family & Transformations from Datamuse + Morphological analysis
+async function fetchWordFamily(rawWord) {
+  const word = rawWord.trim().toLowerCase();
+  if (word.includes(' ') || word.length < 3) {
+    return { verb: '', noun: '', adjective: '', adverb: '', opposite: '' };
+  }
+
+  const result = { verb: '', noun: '', adjective: '', adverb: '', opposite: '' };
+
+  try {
+    // Determine root stem for wildcard search
+    let stem = word;
+    if (word.endsWith('tion') || word.endsWith('sion')) stem = word.slice(0, -4);
+    else if (word.endsWith('ment') || word.endsWith('ness')) stem = word.slice(0, -4);
+    else if (word.endsWith('tive') || word.endsWith('sive')) stem = word.slice(0, -4);
+    else if (word.endsWith('able') || word.endsWith('ible')) stem = word.slice(0, -4);
+    else if (word.endsWith('fully') || word.endsWith('less')) stem = word.slice(0, -4);
+    else if (word.endsWith('ing') || word.endsWith('ied')) stem = word.slice(0, -3);
+    else if (word.endsWith('ed') || word.endsWith('ly') || word.endsWith('al') || word.endsWith('ic')) stem = word.slice(0, -2);
+    if (stem.length < 3) stem = word.slice(0, 3);
+
+    // Parallel query for derivatives and antonyms
+    const [familyRes, antonymRes] = await Promise.allSettled([
+      fetchWithTimeout(`https://api.datamuse.com/words?sp=${encodeURIComponent(stem)}*&md=p&max=25`, {}, 3000),
+      fetchWithTimeout(`https://api.datamuse.com/words?rel_ant=${encodeURIComponent(word)}&max=3`, {}, 2500)
+    ]);
+
+    const familyData = familyRes.status === 'fulfilled' && familyRes.value.ok ? await familyRes.value.json() : [];
+    const antonymData = antonymRes.status === 'fulfilled' && antonymRes.value.ok ? await antonymRes.value.json() : [];
+
+    // Process antonyms
+    if (Array.isArray(antonymData) && antonymData.length > 0) {
+      result.opposite = antonymData.map(a => a.word).slice(0, 2).join(', ');
+    }
+
+    // Process word family by tags
+    if (Array.isArray(familyData)) {
+      const verbs = [];
+      const nouns = [];
+      const adjectives = [];
+      const adverbs = [];
+
+      familyData.forEach(item => {
+        const w = item.word;
+        if (!w || w.includes(' ') || w.length < 3) return;
+        const tags = item.tags || [];
+
+        if (tags.includes('v') && !verbs.includes(w)) verbs.push(w);
+        if (tags.includes('n') && !nouns.includes(w)) nouns.push(w);
+        if (tags.includes('adj') && !adjectives.includes(w)) adjectives.push(w);
+        if (tags.includes('adv') && !adverbs.includes(w)) adverbs.push(w);
+      });
+
+      const topVerb = verbs[0] || (word.endsWith('ed') || word.endsWith('ing') ? stem : '');
+      const topNoun = nouns[0] || '';
+      const topAdj = adjectives[0] || '';
+      const topAdv = adverbs[0] || '';
+      const topOpp = result.opposite ? result.opposite.split(',')[0].trim() : '';
+
+      // Prepare list of words to translate into Vietnamese in a single quick call
+      const wordsToTranslate = [];
+      if (topVerb) wordsToTranslate.push(topVerb);
+      if (topNoun) wordsToTranslate.push(topNoun);
+      if (topAdj) wordsToTranslate.push(topAdj);
+      if (topAdv) wordsToTranslate.push(topAdv);
+      if (topOpp) wordsToTranslate.push(topOpp);
+
+      if (wordsToTranslate.length > 0) {
+        try {
+          const batchText = wordsToTranslate.join(' \n ');
+          const transRes = await fetchGoogleGTX(batchText);
+          if (transRes && transRes[0] && Array.isArray(transRes[0])) {
+            const transMap = {};
+            transRes[0].forEach(item => {
+              if (item && item[0] && item[1]) {
+                const en = item[1].trim().toLowerCase();
+                const vi = item[0].trim().toLowerCase();
+                if (en && vi && en !== vi) {
+                  transMap[en] = vi;
+                }
+              }
+            });
+
+            const formatWithVi = (enWord) => {
+              if (!enWord) return '';
+              const vi = transMap[enWord.toLowerCase()];
+              return vi ? `${enWord} (${vi})` : enWord;
+            };
+
+            if (topVerb) result.verb = formatWithVi(topVerb);
+            if (topNoun) result.noun = formatWithVi(topNoun);
+            if (topAdj) result.adjective = formatWithVi(topAdj);
+            if (topAdv) result.adverb = formatWithVi(topAdv);
+            if (topOpp) result.opposite = formatWithVi(topOpp);
+          } else {
+            // Fallback without translation
+            if (topVerb) result.verb = topVerb;
+            if (topNoun) result.noun = topNoun;
+            if (topAdj) result.adjective = topAdj;
+            if (topAdv) result.adverb = topAdv;
+            if (topOpp) result.opposite = topOpp;
+          }
+        } catch (tErr) {
+          if (topVerb) result.verb = topVerb;
+          if (topNoun) result.noun = topNoun;
+          if (topAdj) result.adjective = topAdj;
+          if (topAdv) result.adverb = topAdv;
+          if (topOpp) result.opposite = topOpp;
+        }
+      }
+    }
+
+    return result;
+  } catch (e) {
+    return result;
   }
 }
 
@@ -73,14 +191,18 @@ export async function lookupWord(rawWord) {
   const isMultiWord = query.includes(' ');
 
   try {
-    // Run FreeDictionary & Google GTX in parallel
-    const [freeDictRes, gtxRes] = await Promise.allSettled([
+    // Run FreeDictionary, Google GTX, and Word Family extraction in parallel
+    const [freeDictRes, gtxRes, familyRes] = await Promise.allSettled([
       fetchFreeDictionary(query),
-      fetchGoogleGTX(query)
+      fetchGoogleGTX(query),
+      fetchWordFamily(query)
     ]);
 
     const freeDictData = freeDictRes.status === 'fulfilled' ? freeDictRes.value : null;
     const gtxData = gtxRes.status === 'fulfilled' ? gtxRes.value : null;
+    const wordFamily = familyRes.status === 'fulfilled' && familyRes.value
+      ? familyRes.value
+      : { verb: '', noun: '', adjective: '', adverb: '', opposite: '' };
 
     // If both failed, try Datamuse fallback
     let datamuseData = null;
@@ -268,7 +390,8 @@ export async function lookupWord(rawWord) {
         example: example || '',
         synonyms: Array.from(synonyms).slice(0, 6),
         suggestedType,
-        additionalMeanings
+        additionalMeanings,
+        wordFamily
       }
     };
   } catch (err) {

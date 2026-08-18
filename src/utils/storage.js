@@ -116,6 +116,39 @@ export const NOTE_TYPES = {
 
 export const INITIAL_SAMPLE_NOTES = [
   {
+    id: 'sample_0',
+    term: 'transform',
+    type: 'word',
+    ipa: '/trænsˈfɔːm/',
+    audioUrl: '',
+    meanings: [
+      {
+        id: 'm0_1',
+        partOfSpeech: 'verb',
+        vietnamese: 'biến đổi, chuyển đổi hoàn toàn hình thức hoặc bản chất',
+        englishDef: 'to change completely the appearance or character of something',
+        example: 'Technology has completely transformed the way we learn English.',
+        synonyms: ['convert', 'revolutionize', 'alter']
+      }
+    ],
+    wordFamily: {
+      verb: 'transform',
+      noun: 'transformation, transformer',
+      adjective: 'transformative, transformed',
+      adverb: 'transformatively',
+      opposite: 'untransformed'
+    },
+    collocations: 'transform into something, undergo a transformation',
+    mnemonic: 'Trans (chuyển giao) + Form (hình thái) = Thay đổi toàn bộ diện mạo',
+    tags: ['IELTS', 'Academic', 'Writing'],
+    isStarred: true,
+    masteryLevel: 'learning',
+    reviewCount: 3,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    lastReviewedAt: null
+  },
+  {
     id: 'sample_1',
     term: 'come up with',
     type: 'phrasal_verb',
@@ -131,6 +164,13 @@ export const INITIAL_SAMPLE_NOTES = [
         synonyms: ['propose', 'devise', 'invent']
       }
     ],
+    wordFamily: {
+      verb: 'come up with',
+      noun: '',
+      adjective: '',
+      adverb: '',
+      opposite: ''
+    },
     collocations: 'come up with a solution / an excuse / a name / a plan',
     mnemonic: 'Tưởng tượng bóng đèn ý tưởng bật "lên" (up) ngay trước mặt bạn',
     tags: ['Work', 'IELTS', 'Daily'],
@@ -315,6 +355,62 @@ export function findExistingNoteByTerm(term, notes) {
   if (!term || !term.trim()) return null;
   const clean = term.trim().toLowerCase();
   return notes.find(n => n.term.trim().toLowerCase() === clean);
+}
+
+/**
+ * Cross-Family Duplicate Detection
+ * Checks if the query term matches:
+ * 1. An exact root term (e.g. term === 'transform') -> { note, matchType: 'exact' }
+ * 2. Or a derivative in an existing note's Word Family (e.g. term === 'transformation' inside 'transform' card) -> { note, matchType: 'word_family', matchedWord: 'transformation', matchedPos: 'Noun' }
+ */
+export function checkDuplicateTerm(term, notes, currentNoteId = null) {
+  if (!term || !term.trim() || !Array.isArray(notes)) return null;
+  const clean = term.trim().toLowerCase();
+  const searchWord = clean.replace(/[^a-z0-9]/g, '');
+  if (searchWord.length < 2) return null;
+
+  for (const n of notes) {
+    if (currentNoteId && n.id === currentNoteId) continue;
+
+    // 1. Direct Term Match
+    const noteTermClean = n.term.trim().toLowerCase();
+    if (noteTermClean === clean) {
+      return { note: n, matchType: 'exact', matchedTerm: n.term };
+    }
+
+    // 2. Check Word Family Derivatives
+    if (n.wordFamily) {
+      const posEntries = [
+        { pos: 'Verb', text: n.wordFamily.verb },
+        { pos: 'Noun', text: n.wordFamily.noun },
+        { pos: 'Adjective', text: n.wordFamily.adjective },
+        { pos: 'Adverb', text: n.wordFamily.adverb },
+        { pos: 'Opposite', text: n.wordFamily.opposite }
+      ];
+
+      for (const entry of posEntries) {
+        if (!entry.text) continue;
+        const words = entry.text.split(',').map(w => {
+          const match = w.match(/^([^(]+)/);
+          return (match ? match[1] : w).trim().toLowerCase();
+        });
+
+        for (const w of words) {
+          if (w === clean) {
+            return {
+              note: n,
+              matchType: 'word_family',
+              matchedTerm: n.term,
+              matchedWord: w,
+              matchedPos: entry.pos
+            };
+          }
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 export function addOrUpdateNote(noteData, notes) {
